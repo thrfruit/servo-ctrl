@@ -1,0 +1,5 @@
+﻿  main.c
+C:\workbench\MotorMaster.Sdk\C\SdkTest\main.c(24,50): warning C4305: “函数”: 从“double”到“float”截断
+C:\workbench\MotorMaster.Sdk\C\SdkTest\main.c(30,51): warning C4305: “函数”: 从“double”到“float”截断
+C:\workbench\MotorMaster.Sdk\C\SdkTest\main.c(46,49): warning C4305: “函数”: 从“double”到“float”截断
+  SdkTest.vcxproj -> C:\workbench\MotorMaster.Sdk\C\SdkTest\Debug\SdkTest.exe
