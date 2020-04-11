@@ -9,6 +9,7 @@
 #include"../include/common.h"
 
 extern void servo_function();
+extern void servo_function_test();
 extern void CalcRefPath(double curtime, PATH *path, double *pos, double *dpos);
 
 #endif

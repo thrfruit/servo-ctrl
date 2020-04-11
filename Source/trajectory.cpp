@@ -18,24 +18,22 @@ void initTrjBuff()
         PathBuff.data_num = 0;
 }
 
-int PutTrjBuff(PATH *path)
-{
-        int i, data_num;
-        data_num = PathBuff.data_num;
-        if(data_num >= TRJ_LENGTH){
-                printf("Error: The path buffer is full!!!\n");
-                return(1);
-        }
-        else{
-                if(data_num > 0) {
-                        for(i=data_num; i>0; i--){
-                                PathBuff.Path[i] = PathBuff.Path[i-1];
-                        }
-                }
-                PathBuff.Path[0] = *path;
-                PathBuff.data_num = data_num + 1;
-        }
-        return 0;
+int PutTrjBuff(PATH *path) {
+  int i, data_num;
+  data_num = PathBuff.data_num;
+  if (data_num >= TRJ_LENGTH) {
+    printf("Error: The path buffer is full!!!\n");
+    return (1);
+  } else {
+    if (data_num > 0) {
+      for (i = data_num; i > 0; i--) {
+        PathBuff.Path[i] = PathBuff.Path[i - 1];
+      }
+    }
+    PathBuff.Path[0] = *path;
+    PathBuff.data_num = data_num + 1;
+  }
+  return 0;
 }
 
 int GetTrjBuff(PATH *path)

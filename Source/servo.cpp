@@ -1,83 +1,81 @@
-/* servo.cpp
- * 
+/*
+ * servo.cpp
+ * 伺服进程的
  */
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<sys/ipc.h>
-#include<sys/shm.h>
-#include<string.h>
-#include<errno.h>
-#include<vector>
-#include<iostream>
-#include"../include/trajectory.h"
-#include"../include/servo.h"
-#include"../include/interface.h"
-#include"../include/system.h"
+#include "../include/servo.h"
+#include "../include/common.h"
+#include "../include/interface.h"
+#include "../include/motion_axis.h"
+#include "../include/system.h"
+#include "../include/trajectory.h"
+#include <errno.h>
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <vector>
 
 int cnt = 0;
-extern void* shm_addr;
-using namespace std;
-extern SVO pSVO;
-extern pthread_mutex_t servoMutex;
 
-void servo_function()
-{
-        int ret;
-        double curtime;
-        double com_pos;
-        SVO servoP;
-        PATH path;
+void servo_function() {
+  int ret;
+  double curtime;
+  double cmd_pos;
+  SVO servo_svo;
+  PATH path;
 
-        double robot_pos;
-        double robot_dpos;
-        
-        // Get current time
-        curtime = GetCurrentTime();
-        SvoReadFromGui(&servoP);
-        servoP.Time = curtime;
+  double robot_pos;
+  double robot_dpos;
+  int handle = 0;
 
-        // Get the current status of robot
-        robot_pos = servoP.pos;
+  // Get current time
+  curtime = GetCurrentTime();
+  SvoReadFromGui(&servo_svo);
+  servo_svo.Time = curtime;
 
-        // Cooy the status of robot
-        servoP.Curpos = robot_pos;
-        
+  // Get the current status of robot
+  robot_pos = rm_read_current_position(handle);
 
-        // ----------- should be noticed ---------------
-        if(servoP.NewPathFlag == ON){
-                if(servoP.PathtailFlag == OFF){
-                        ret = GetTrjBuff(&path);
-                        if(ret == 0){
-                                servoP.Path = path;
-                                SetStartTime(curtime);
-                        }
-                        else{
-                                servoP.PathtailFlag = ON;
-                        }
-                        servoP.NewPathFlag = ON;
-                }
-        }
+  // Cooy the status of robot
+  servo_svo.Curpos = robot_pos;
 
-        // Set path data
-        if(servoP.NewPathFlag == ON){
-                servoP.Path.Orig = servoP.Curpos;
-                servoP.NewPathFlag = OFF;
-        }
+  // ----------- should be noticed ---------------
+  if (servo_svo.NewPathFlag == ON) {
+    if (servo_svo.PathtailFlag == OFF) { // 判断堆栈是否已经弹空
+      ret = GetTrjBuff(&path);
+      if (ret == 0) {
+        servo_svo.Path = path;
+        SetStartTime(curtime);
+      } else {
+        servo_svo.PathtailFlag = ON; // 堆栈已空
+      }
+      servo_svo.NewPathFlag = ON;
+    }
+  }
 
-        // Set servo data
-        if(servoP.ServoFlag == ON){
-                CalcRefPath(GetCurrentTime(), &servoP.Path, &servoP.Refpos, &servoP.Refdpos);
-        }
+  // Set path data
+  if (servo_svo.NewPathFlag == ON) {
+    servo_svo.Path.Orig = servo_svo.Curpos;
+    servo_svo.NewPathFlag = OFF;
+  }
 
-        /* 发起运动指令 */
-        com_pos = servoP.Refpos;
-        servoP.Curpos = com_pos;
-        pthread_mutex_lock(&servoMutex);
-        pSVO.Curpos = com_pos;
-        pSVO.NewPathFlag = servoP.NewPathFlag;
-        pthread_mutex_unlock(&servoMutex);
+  // Set servo data
+  // Note: 这里保存数据最好先判断伺服标志是否置位，否则有可能Setsvo函数无法取得线程，
+  // 导致开始时无法传递伺服运动参数。
+  if (servo_svo.ServoFlag == ON) {
+    CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos,
+                &servo_svo.Refdpos);
+    /* 发起运动指令 */
+    cmd_pos = servo_svo.Refpos;
+    /* 保存数据到公共数据库 */
+    SvoWrite(&servo_svo);
+  }
+
+  rm_move_absolute(handle, cmd_pos, 200, 3000, 3000, 0.1);
+
+  cnt++;
 }
-        
-
 

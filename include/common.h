@@ -40,15 +40,15 @@ typedef struct{
 }PATH;
 
 typedef struct{
-        int ServoFlag;
+  int ServoFlag;
 	int NewPathFlag;
 	int PathtailFlag;
 	double Time;
-        PATH Path;
+  PATH Path;
 	double Curpos;
 	double Refpos;
 	double Refdpos;
-        double pos;
+    double pos;
 	double dpos;
 }SVO;
 
