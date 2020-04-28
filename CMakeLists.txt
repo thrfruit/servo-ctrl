@@ -16,6 +16,7 @@ aux_source_directory(./Source DIR_SRCS)
 # 动态链接库路径
 link_directories(${CMAKE_CURRENT_LIST_DIR}/lib)
 
+# 生成可执行文件
 add_executable(servo ${DIR_SRCS})
 
 # 添加依赖库
