@@ -44,6 +44,7 @@ void main()
 
 	// 绝对运动
 	rm_move_absolute(handle, 0, 10, 3000, 3000, 0.1);
+	rm_push(handle, 50, 10, 10);
 
 	// 断开轴
 	rm_close_axis(handle);

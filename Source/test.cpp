@@ -67,7 +67,9 @@ int main(int argc, char *argv[]) {
   while (rm_is_moving(handle));
   printf("RM is home\n");
 
-  rm_move_absolute(handle, 10, 10, 3000, 3000, 0.1);
+  // rm_move_absolute(handle, 10, 10, 3000, 3000, 0.1);
+  // rm_push(handle, 50, 10, 10);
+  // while (rm_is_moving(handle));
 
   /*** At beginning ***/
 
@@ -169,7 +171,7 @@ void *interface_function(void *param) {
     }
     interface_counter++;
   } while (end);
-  sleep(2);
+  sleep(1);
   rm_close_axis(0);
   printf("End of Experiment\n");
   return 0;

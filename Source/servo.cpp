@@ -9,6 +9,7 @@
 #include "../include/motion_axis.h"
 #include "../include/system.h"
 #include "../include/trajectory.h"
+#include"../include/WzSerialPort.h"
 #include <errno.h>
 #include <iostream>
 #include <stdio.h>
@@ -26,10 +27,13 @@ void servo_function() {
   double cmd_pos;
   SVO servo_svo;
   PATH path;
+  WzSerialPort serial;
+  char buf[1024];
+  memset(buf, 0, 1024);
 
   double robot_pos;
   double robot_dpos;
-  int handle = 0;
+  rm_axis_handle handle = 0;
 
   // Get current time
   curtime = GetCurrentTime();
@@ -66,15 +70,26 @@ void servo_function() {
   // Note: 这里保存数据最好先判断伺服标志是否置位，否则有可能Setsvo函数无法取得线程，
   // 导致开始时无法传递伺服运动参数。
   if (servo_svo.ServoFlag == ON) {
-    CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos,
-                &servo_svo.Refdpos);
-    /* 发起运动指令 */
-    cmd_pos = servo_svo.Refpos;
+    // 计算下一时刻的位置
+    // CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos,
+    //             &servo_svo.Refdpos);
+    if (serial.open("/dev/ttyACM0", 115200, 0, 8, 1)) {
+      serial.receive(buf, 1024);
+      sscanf(buf, "%lf", &servo_svo.Refpos);
+      // servo_svo.Refpos = (double)servo_svo.Refpos/100.0;
+    }
+
+    /* 发起运动指令
+     * rm_move_absolute: 运动到绝对位置；
+     * rm_push: 以规定力推动到相对位置；*/
+    // cmd_pos = servo_svo.Refpos - servo_svo.Curpos;
+    // rm_push(handle, 50, cmd_pos, 10);
+    // cmd_pos = servo_svo.Refpos;
+    // rm_move_absolute(handle, cmd_pos, 200, 3000, 3000, 0.1);
+
     /* 保存数据到公共数据库 */
     SvoWrite(&servo_svo);
   }
-
-  rm_move_absolute(handle, cmd_pos, 200, 3000, 3000, 0.1);
 
   cnt++;
 }

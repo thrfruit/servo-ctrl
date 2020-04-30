@@ -43,12 +43,13 @@ typedef struct{
   int ServoFlag;
 	int NewPathFlag;
 	int PathtailFlag;
+  float Refforce;
 	double Time;
   PATH Path;
 	double Curpos;
 	double Refpos;
 	double Refdpos;
-    double pos;
+  double pos;
 	double dpos;
 }SVO;
 
