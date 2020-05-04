@@ -1,4 +1,7 @@
 
+#ifndef INTERFACE_H
+#define INTERFACE_H
+
 #include"./common.h"
 
 /* dataExchange.cpp */
@@ -9,4 +12,6 @@ extern void ChangePosData(PATH *Path);
 extern void SetSvo(SVO *data);
 extern void SvoWrite(SVO *data);
 extern void SvoRead(SVO *data);
+
+#endif
 

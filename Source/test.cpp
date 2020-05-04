@@ -63,12 +63,13 @@ int main(int argc, char *argv[]) {
   rm_axis_handle handle = rm_open_axis_modbus_rtu("/dev/ttyS110", 115200, 0);
   rm_reset_error(handle);
 
-  rm_go_home(handle);
+  // rm_go_home(handle);
+  rm_move_absolute(handle, 2, 10, 3000, 3000, 0.1);
   while (rm_is_moving(handle));
   printf("RM is home\n");
 
   // rm_move_absolute(handle, 10, 10, 3000, 3000, 0.1);
-  // rm_push(handle, 50, 10, 10);
+  rm_push(handle, 5, 10, 10);
   // while (rm_is_moving(handle));
 
   /*** At beginning ***/
@@ -145,6 +146,11 @@ void *interface_function(void *param) {
     case 'C':
       printf("Hello, this function is not finished.\n");
       break;
+    case 'f':
+    case 'F':
+      printf("Force:\n");
+      scanf("%lf", &interface_svo.Refforce);
+      break;
     case 'p':
     case 'P':
       printf("----------------- Now you are in SvoMode -----------------\n");
@@ -158,6 +164,7 @@ void *interface_function(void *param) {
       break;
     case 'i':
     case 'I':
+      SvoRead(&interface_svo);
       DisplayCurrentInformation(interface_svo.Path, interface_svo.ServoFlag);
       break;
     case 'e':
@@ -193,6 +200,7 @@ void *display_function(void *param) {
       printf("Time:%0.1f\n", time);
       printf("Current position of claw: %.2f\n", display_svo.Curpos);
       printf("Reference position of claw: %.2f\n", display_svo.Refpos);
+      printf("Curforce signal: %.2f\n", display_svo.Curforce);
     }
     usleep(25000); // Delay for 25ms
   } while (shm_servo_inter.status_control != EXIT_C);
@@ -216,5 +224,6 @@ void DisplayCurrentInformation(PATH path, int flag){
   printf("Path frequency = %f [HZ]\n", pSVO.Path.Freq);
   printf("Current position[mm]: %.2f\n", pSVO.Curpos);
   printf("Goal position[mm]: %.2f\n", pSVO.Path.Goal);
+  printf("Current Force[N]: %.2f\n", pSVO.Curforce);
 }
 

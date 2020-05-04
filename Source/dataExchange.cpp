@@ -5,6 +5,7 @@
 #include"../include/common.h"
 #include"../include/trajectory.h"
 #include"../include/system.h"
+#include"../include/servo.h"
 
 pthread_mutex_t servoMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -48,18 +49,16 @@ void SvoReadFromDis(SVO *data)
 /*
  * 从键盘读取运动参数到当前线程
  */
-void ChangePosData(PATH *Path)
-{
-        printf("Path frequency [1/s] = \n");
-        scanf("%lf", &Path->Freq);
-        printf("Path mode: 1JI(1)\n");
-        printf("Path mode = \n");
-        scanf("%d", &Path->Mode);
+void ChangePosData(PATH *Path) {
+  printf("Path frequency [1/s] = \n");
+  scanf("%lf", &Path->Freq);
+  printf("Path mode: 1JI(1)\n");
+  printf("Path mode = \n");
+  scanf("%d", &Path->Mode);
 
-        printf("Position of claw (mm) = \n");
-        scanf("%lf", &Path->Goal);
+  printf("Position of claw (mm) = \n");
+  scanf("%lf", &Path->Goal);
 }
-
 
 /*
  * 开始伺服控制。清空命令堆栈，将当前轨迹放入堆栈。
@@ -70,6 +69,7 @@ void SetSvo(SVO *data) {
 
   pSVO.ServoFlag = data->ServoFlag;
   pSVO.Path = data->Path;
+  pSVO.Refforce = data->Refforce;
 
   initTrjBuff();
   ret = PutTrjBuff(&pSVO.Path);
@@ -90,4 +90,7 @@ void SetSvo(SVO *data) {
   ResetTime();
   time = GetCurrentTime();
   SetStartTime(time);
+
+  // 重置PID控制器
+  omn_df = 0.0;
 }

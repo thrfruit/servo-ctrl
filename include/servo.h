@@ -7,6 +7,7 @@
 #define SERVO_H
 
 #include"../include/common.h"
+extern double omn_df;
 
 extern void servo_function();
 extern void servo_function_test();

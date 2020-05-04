@@ -11,30 +11,28 @@
 
 using namespace std;
 
-void CalcRefPath(double curtime, PATH *path, double *pos, double *dpos)
-{
-        double *orig, *goal, *ref, *ref_v;
+void CalcRefPath(double curtime, PATH *path, double *pos, double *dpos) {
+  double *orig, *goal, *ref, *ref_v;
 
-        orig = &path->Orig;
-        goal = &path->Goal;
-        ref  = pos;
-        ref_v= dpos;
+  orig = &path->Orig;
+  goal = &path->Goal;
+  ref = pos;
+  ref_v = dpos;
 
-        // 设置伺服间隔内运动的距离
-        switch (path->Mode){
-                case PATH_1JI:
-                        *ref = Calc1JiTraje(*orig, *goal, path->Freq, curtime);
-                        break;
-                case PATH_3JI:
-                        break;
-                default:
-                        *ref = Calc1JiTraje(*orig, *goal, path->Freq, curtime);
-        }
-        
-        // 设置私服间隔内运动的速度
-        switch (path->Mode){
-                default:
-                        *ref_v = 0.;
-        }
+  // 设置伺服间隔内运动的距离
+  switch (path->Mode) {
+  case PATH_1JI:
+    *ref = Calc1JiTraje(*orig, *goal, path->Freq, curtime);
+    break;
+  case PATH_3JI:
+    break;
+  default:
+    *ref = Calc1JiTraje(*orig, *goal, path->Freq, curtime);
+  }
+
+  // 设置私服间隔内运动的速度
+  switch (path->Mode) {
+  default:
+    *ref_v = 0.;
+  }
 }
-
