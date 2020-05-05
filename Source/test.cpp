@@ -64,12 +64,12 @@ int main(int argc, char *argv[]) {
   rm_reset_error(handle);
 
   // rm_go_home(handle);
-  rm_move_absolute(handle, 2, 10, 3000, 3000, 0.1);
+  rm_move_absolute(handle, 5, 10, 3000, 3000, 0.1);
   while (rm_is_moving(handle));
   printf("RM is home\n");
 
   // rm_move_absolute(handle, 10, 10, 3000, 3000, 0.1);
-  rm_push(handle, 5, 10, 10);
+  // rm_push(handle, 5, 10, 10);
   // while (rm_is_moving(handle));
 
   /*** At beginning ***/
