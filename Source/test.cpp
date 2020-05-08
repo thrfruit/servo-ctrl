@@ -59,6 +59,9 @@ int main(int argc, char *argv[]) {
   printf("Executing main function\n");
   pthread_t interface_thread, display_thread; // Declare threads;
 
+  // Reset save buffer
+  SaveDataReset();
+
   rm_init();
   rm_axis_handle handle = rm_open_axis_modbus_rtu("/dev/ttyS110", 115200, 0);
   rm_reset_error(handle);
@@ -104,7 +107,7 @@ int main(int argc, char *argv[]) {
   }
   /*** Create personal threads ***/
 
-  while (1) {
+  do {
     /* wait until next shot */
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
 
@@ -120,7 +123,26 @@ int main(int argc, char *argv[]) {
       t.tv_nsec -= NSEC_PER_SEC;
       t.tv_sec++;
     }
+  } while(shm_servo_inter.status_control != EXIT_C);
+
+  if (pthread_join(interface_thread, NULL)) {
+    perror("pthread_join at interface_thread\n");
+    exit(1);
   }
+
+  if (pthread_join(display_thread, NULL)) {
+    perror("pthread_join at display_thread\n");
+  }
+
+  /* Close IO */
+  ExpDataWrite();
+  /* Close IO */
+
+  /* Close RM */
+  rm_close_axis(handle);
+  /* Close RM */
+
+  exit(1);
 }
 
 /*** Define function ***/
@@ -178,8 +200,8 @@ void *interface_function(void *param) {
     }
     interface_counter++;
   } while (end);
-  sleep(1);
-  rm_close_axis(0);
+  sleep(4);
+  // rm_close_axis(0);
   printf("End of Experiment\n");
   return 0;
 }

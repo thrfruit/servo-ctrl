@@ -111,6 +111,9 @@ void servo_function() {
 
     /* 保存数据到公共数据库 */
     SvoWrite(&servo_svo);
+
+    /* 将数据保存到队列，用于存档 */
+    ExpDataSave(&servo_svo);
   }
 
   cnt++;
