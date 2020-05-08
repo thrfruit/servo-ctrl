@@ -2,6 +2,7 @@
  *
  */
 
+#include<math.h>
 #include"../include/trajectory.h"
 #define TRJ_LENGTH 20
 
@@ -66,5 +67,12 @@ double Calc1JiTraje(double orig, double goal, double freq, double time)
         if(time_n <= 1)
                 ref = orig + (goal-orig)*time_n;
         return ref;
+}
+
+// Sin函数的轨迹插值
+double CalcSinTraje(double time) {
+  double ref;
+  ref = 6 + 6*sin(2*time);
+  return ref;
 }
 

@@ -24,7 +24,8 @@ void CalcRefPath(double curtime, PATH *path, double *pos, double *dpos) {
   case PATH_1JI:
     *ref = Calc1JiTraje(*orig, *goal, path->Freq, curtime);
     break;
-  case PATH_3JI:
+  case PATH_SIN:
+    *ref = CalcSinTraje(curtime);
     break;
   default:
     *ref = Calc1JiTraje(*orig, *goal, path->Freq, curtime);

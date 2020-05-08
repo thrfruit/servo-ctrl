@@ -13,5 +13,9 @@ extern void SetSvo(SVO *data);
 extern void SvoWrite(SVO *data);
 extern void SvoRead(SVO *data);
 
+/* dataSave.cpp */
+extern void ExpDataSave(SVO *data);
+extern void SaveDataReset();
+extern void ExpDataWrite();
 #endif
 

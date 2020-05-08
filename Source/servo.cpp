@@ -23,7 +23,7 @@ int cnt = 0;
 // 串口通信
 WzSerialPort serial;
 char buf[1024];
-bool serial_flag = serial.open("/dev/ttyACM0", 115200, 0, 8, 1);
+// bool serial_flag = serial.open("/dev/ttyACM0", 115200, 0, 8, 1);
 // PID控制器
 double omn_df;
 double kp = -0.1;
@@ -50,9 +50,9 @@ void servo_function() {
   robot_pos = rm_read_current_position(handle);
 
   // 读取串口数据
-  memset(buf, 0, 1024);
-  serial.receive(buf, 1024);
-  sscanf(buf, "%lf", &servo_svo.Curforce);
+  // memset(buf, 0, 1024);
+  // serial.receive(buf, 1024);
+  // sscanf(buf, "%lf", &servo_svo.Curforce);
 
   // Cooy the status of robot
   servo_svo.Curpos = robot_pos;
@@ -82,35 +82,38 @@ void servo_function() {
   // 导致开始时无法传递伺服运动参数。但是这样做的话，无法在伺服未启动时读取夹具状态。
   if (servo_svo.ServoFlag == ON) {
     // 多项式轨迹插补
-    // CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos,
-    //             &servo_svo.Refdpos);
+    CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos,
+                &servo_svo.Refdpos);
 
 
     // PID控制
-    df = servo_svo.Curforce - servo_svo.Refforce;
-    omn_df += df;
-    cmd_pos = kp*df + ki*omn_df;
-    servo_svo.Refpos = servo_svo.Curpos + cmd_pos;
-    if(servo_svo.Refpos <= 0) {
-      servo_svo.Refpos = 0;
-      omn_df = 0;
-    }
-    else if (servo_svo.Refpos >= 10) {
-      servo_svo.Refpos = 10;
-      omn_df = 0;
-    }
-    servo_svo.Refpos = cmd_pos;
+    // df = servo_svo.Curforce - servo_svo.Refforce;
+    // omn_df += df;
+    // cmd_pos = kp*df + ki*omn_df;
+    // servo_svo.Refpos = servo_svo.Curpos + cmd_pos;
+    // if(servo_svo.Refpos <= 0) {
+    //   servo_svo.Refpos = 0;
+    //   omn_df = 0;
+    // }
+    // else if (servo_svo.Refpos >= 10) {
+    //   servo_svo.Refpos = 10;
+    //   omn_df = 0;
+    // }
+    // servo_svo.Refpos = cmd_pos;
 
     /* 发起运动指令
      * rm_move_absolute: 运动到绝对位置；
      * rm_push: 以规定力推动到相对位置；*/
     // cmd_pos = servo_svo.Refpos - servo_svo.Curpos;
-    rm_push(handle, 20, cmd_pos, 10);
-    // cmd_pos = servo_svo.Refpos;
-    // rm_move_absolute(handle, cmd_pos, 200, 3000, 3000, 0.1);
+    // rm_push(handle, 20, cmd_pos, 10);
+    cmd_pos = servo_svo.Refpos;
+    rm_move_absolute(handle, cmd_pos, 200, 3000, 3000, 0.1);
 
     /* 保存数据到公共数据库 */
     SvoWrite(&servo_svo);
+
+    /* 将数据保存到队列，用于存档 */
+    ExpDataSave(&servo_svo);
   }
 
   cnt++;

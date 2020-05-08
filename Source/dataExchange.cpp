@@ -52,7 +52,8 @@ void SvoReadFromDis(SVO *data)
 void ChangePosData(PATH *Path) {
   printf("Path frequency [1/s] = \n");
   scanf("%lf", &Path->Freq);
-  printf("Path mode: 1JI(1)\n");
+
+  printf("Path mode: Sin(0) 1JI(1)\n");
   printf("Path mode = \n");
   scanf("%d", &Path->Mode);
 
