@@ -36,19 +36,30 @@ void ExpDataWrite() {
 
   // 此处路径从Cmake根目录填起
   file1.open("data/data.position");
-  // file2.open("data/data.Refpos");
+  file2.open("data/data.force");
 
-  if(file1.is_open()) {
+  if(file1.is_open() & file2.is_open()) {
     printf("Saving data ...\n");
-    file1 << std::left << setw(12) << "Time" << setw(12) <<"Curpos" << setw(12) <<"Refpos" << endl;
+    file1 << std::left << setw(12) << "Time" << setw(12) <<"Curpos" 
+          << setw(12) <<"Refpos" << endl;
+    file2 << std::left << setw(12) << "Time" << setw(12) <<"Curforce" 
+          << setw(12) <<"Refforce" << endl;
+
     for(i=0; i<Exp_data_index; i++) {
-      file1 << std::left << setw(12) << Exp_data[i].Time << setw(12)
-            << Exp_data[i].Curpos << setw(12) <<Exp_data[i].Refpos << endl;
-      // file2 << Exp_data[i].Refpos << endl;
+      file1 << std::left << setw(12) << Exp_data[i].Time 
+            << setw(12) << Exp_data[i].Curpos 
+            << setw(12) <<Exp_data[i].Refpos 
+            << setw(12) <<Exp_data[i].temp
+            << endl;
+      file2 << std::left << setw(12) << Exp_data[i].Time
+            << setw(12) << Exp_data[i].Curforce
+            << setw(12) << Exp_data[i].Refforce
+            << setw(12) <<Exp_data[i].temp
+            << endl;
     }
 
     file1.close();
-    // file2.close();
+    file2.close();
     printf("Data saved.\n");
   } 
   else {

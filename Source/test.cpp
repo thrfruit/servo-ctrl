@@ -19,6 +19,7 @@
 #include"../include/system.h"
 #include"../include/interface.h"
 #include"../include/trajectory.h"
+#include"../include/usb-daq-v20.h"
 /*** Personal headers ***/
 
 /* we use 49 as the PRREMPT_RT use 50
@@ -53,7 +54,7 @@ void stack_prefault(void) {
 int main(int argc, char *argv[]) {
   struct timespec t;
   struct sched_param param;
-  int interval = 8000000; /* 8 ms*/
+  int interval = 5000000; /* 伺服周期内纳秒数 ns*/
 
   /*** At beginning ***/
   printf("Executing main function\n");
@@ -62,18 +63,25 @@ int main(int argc, char *argv[]) {
   // Reset save buffer
   SaveDataReset();
 
+  // Init RmClawer
   rm_init();
   rm_axis_handle handle = rm_open_axis_modbus_rtu("/dev/ttyS110", 115200, 0);
   rm_reset_error(handle);
-
-  // rm_go_home(handle);
-  rm_move_absolute(handle, 5, 10, 3000, 3000, 0.1);
-  while (rm_is_moving(handle));
-  printf("RM is home\n");
-
-  // rm_move_absolute(handle, 10, 10, 3000, 3000, 0.1);
-  // rm_push(handle, 5, 10, 10);
+  rm_go_home(handle);
+  // rm_move_absolute(handle, 5, 10, 3000, 3000, 0.1);
+  rm_push(handle, 20, 8, 10);
   // while (rm_is_moving(handle));
+  printf("RM is home\n");
+  rm_config_motion(handle, 100, 3000, 3000);
+
+  sleep(1);
+  pSVO.Refpos = rm_read_current_position(handle);
+  printf("current position: %f\n", pSVO.Refpos);
+
+  // Init UsbV20
+  if(-1 == OpenUsbV20()) {
+    printf("...... UsbV20! Open! Failed! ......");
+  }
 
   /*** At beginning ***/
 
@@ -155,6 +163,8 @@ void *interface_function(void *param) {
   int command;
   SVO interface_svo;
 
+  SvoRead(&interface_svo);
+
   printf("Executing interface function\n");
   DisplayMenu();
   do {
@@ -172,12 +182,16 @@ void *interface_function(void *param) {
     case 'F':
       printf("Force:\n");
       scanf("%lf", &interface_svo.Refforce);
+      interface_svo.ForceFlag = ON;
+      interface_svo.PathFlag = OFF;
       break;
     case 'p':
     case 'P':
       printf("----------------- Now you are in SvoMode -----------------\n");
       printf("Set the goal position:\n");
       ChangePosData(&interface_svo.Path);
+      interface_svo.ForceFlag = OFF;
+      interface_svo.PathFlag = ON;
       break;
     case 's':
     case 'S':

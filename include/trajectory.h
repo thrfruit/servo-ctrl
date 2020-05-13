@@ -5,11 +5,11 @@
 #include"./common.h"
 
 /* trajectory.cpp */
-extern void initTrjBuff();
-extern int PutTrjBuff(PATH* path);
-extern int GetTrjBuff(PATH* path);
-extern double Calc1JiTraje(double orig, double goal, double freq, double time);
-extern double CalcSinTraje(double time);
+void initTrjBuff();
+int PutTrjBuff(PATH* path);
+int GetTrjBuff(PATH* path);
+double Calc1JiTraje(double orig, double goal, double freq, double time);
+double CalcSinTraje(double time);
 
 #endif
 

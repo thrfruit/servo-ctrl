@@ -41,6 +41,8 @@ typedef struct{
 
 typedef struct{
   int ServoFlag;
+  int PathFlag;
+  int ForceFlag;
 	int NewPathFlag;
 	int PathtailFlag;
   double Refforce;
@@ -52,6 +54,7 @@ typedef struct{
 	double Refdpos;
   double pos;
 	double dpos;
+  double temp;
 }SVO;
 
 }

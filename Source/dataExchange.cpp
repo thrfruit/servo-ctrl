@@ -6,8 +6,10 @@
 #include"../include/trajectory.h"
 #include"../include/system.h"
 #include"../include/servo.h"
+#include"../include/WzSerialPort.h"
 
 pthread_mutex_t servoMutex = PTHREAD_MUTEX_INITIALIZER;
+extern WzSerialPort serial;
 
 // Shared variable
 SVO pSVO;
@@ -67,22 +69,30 @@ void ChangePosData(PATH *Path) {
 void SetSvo(SVO *data) {
   int ret;
   double time;
+  extern double omn_df;
 
-  pSVO.ServoFlag = data->ServoFlag;
-  pSVO.Path = data->Path;
-  pSVO.Refforce = data->Refforce;
+  SvoWrite(data);
 
   initTrjBuff();
-  ret = PutTrjBuff(&pSVO.Path);
-  printf("ret = %d\n", ret);
-  if (ret == 1)
-    printf("PathBufferPut Error\n");
-  else {
-    printf("Done with PutTrjBuff.\n");
-    printf("Goal position is %f\n", pSVO.Path.Goal);
+
+  if (data->PathFlag == ON) {
+    ret = PutTrjBuff(&pSVO.Path);
+    printf("ret = %d\n", ret);
+    if (ret == 1)
+      printf("PathBufferPut Error\n");
+    else {
+      printf("Done with PutTrjBuff.\n");
+      printf("Goal position is %f\n", pSVO.Path.Goal);
+    }
+    printf("> OUT frequency < %f [HZ]\n", pSVO.Path.Freq);
+    printf("> OUT mode < %d\n", pSVO.Path.Mode);
   }
-  printf("> OUT frequency < %f [HZ]\n", pSVO.Path.Freq);
-  printf("> OUT mode < %d\n", pSVO.Path.Mode);
+
+  if (data->ForceFlag == ON) {
+    // bool serial_flag = serial.open("/dev/ttyACM0", 115200, 0, 8, 1);
+    // 重置PID控制器
+    omn_df = 0.0;
+  }
 
   pSVO.ServoFlag = ON;
   pSVO.NewPathFlag = ON;
@@ -91,7 +101,4 @@ void SetSvo(SVO *data) {
   ResetTime();
   time = GetCurrentTime();
   SetStartTime(time);
-
-  // 重置PID控制器
-  omn_df = 0.0;
 }

@@ -5,17 +5,17 @@
 #include"./common.h"
 
 /* dataExchange.cpp */
-extern void SvoWriteFromServo(SVO *data);
-extern void SvoReadFromGui(SVO *data);
-extern void SvoReadFromDis(SVO *data);
-extern void ChangePosData(PATH *Path);
-extern void SetSvo(SVO *data);
-extern void SvoWrite(SVO *data);
-extern void SvoRead(SVO *data);
+void SvoWriteFromServo(SVO *data);
+void SvoReadFromGui(SVO *data);
+void SvoReadFromDis(SVO *data);
+void ChangePosData(PATH *Path);
+void SetSvo(SVO *data);
+void SvoWrite(SVO *data);
+void SvoRead(SVO *data);
 
 /* dataSave.cpp */
-extern void ExpDataSave(SVO *data);
-extern void SaveDataReset();
-extern void ExpDataWrite();
+void ExpDataSave(SVO *data);
+void SaveDataReset();
+void ExpDataWrite();
 #endif
 

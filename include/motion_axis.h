@@ -131,6 +131,8 @@ extern "C" {
 
 	RM_API int rm_list_modbus_devices(char device_names[RM_DEVICE_MAX_COUNT][RM_DEVICE_NAME_MAX_LEN]);
 
+	RM_API int rm_list_connected_devices(rm_axis_handle handles[RM_DEVICE_MAX_COUNT]);
+
 	// constructors
 	RM_API rm_axis_handle rm_open_axis_modbus_rtu(const char* device, int baudrate, uint8_t axis_no);
 
@@ -162,10 +164,18 @@ extern "C" {
 	RM_API void rm_set_io_in_map(rm_axis_handle handle, int port, MOTION_IO_IN in);
 
 	RM_API void rm_set_io_out_map(rm_axis_handle handle, int port, MOTION_IO_OUT out);
+
+	RM_API bool rm_get_user_io(rm_axis_handle handle, int port);
+
+	RM_API void rm_set_user_io(rm_axis_handle handle, int port, bool value);
 	
 	// RM_API void rm_set_variable(rm_axis_handle
 
 	// standard motion api functions
+	RM_API void rm_config_motion(rm_axis_handle handle, float velocity, float acceleration, float deacceleration);
+
+	RM_API void rm_set_position(rm_axis_handle handle, float position);
+
 	RM_API void rm_move_absolute(rm_axis_handle handle, float position, float velocity, float acceleration, float deacceleration, float band);
 
 	RM_API void rm_push(rm_axis_handle handle, float force, float distance, float velocity);

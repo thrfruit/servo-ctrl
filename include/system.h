@@ -4,13 +4,13 @@
 
 #include"./common.h"
 
-extern double GetCurrentTime();
-extern void ResetTime();
-extern void ResetTimerCounter();
-extern void TimeCounterAdd();
-extern int GetTimerCounter();
-extern double GetOffsetTime();
-extern void SetStartTime(double time);
+double GetCurrentTime();
+void ResetTime();
+void ResetTimerCounter();
+void TimeCounterAdd();
+int GetTimerCounter();
+double GetOffsetTime();
+void SetStartTime(double time);
 
 #endif
 

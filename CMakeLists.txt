@@ -24,5 +24,6 @@ add_executable(servo ${DIR_SRCS})
 find_package(Threads)
 target_link_libraries(servo ${CMAKE_THREAD_LIBS_INIT})
 
-target_link_libraries(servo -lMotorMaster.Sdk)
+target_link_libraries(servo -lMotorMaster.Sdk)    # 夹爪的链接库
+target_link_libraries(servo -l_usbdaq_v20 -lusb-1.0)    # AD采集板卡的链接库
 
