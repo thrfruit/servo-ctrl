@@ -9,8 +9,8 @@
 #include "../include/motion_axis.h"
 #include "../include/system.h"
 #include "../include/trajectory.h"
-#include"../include/WzSerialPort.h"
 #include"../include/usb-daq-v20.h"
+#include"../include/pidctrl.h"
 #include <errno.h>
 #include <iostream>
 #include <stdio.h>
@@ -21,14 +21,9 @@
 #include <vector>
 
 int cnt = 0;
-// 串口通信
-WzSerialPort serial;
-char buf[1024];
 float adBuf[1024];
-// PID控制器
-double omn_df;
-double kp = -0.1;
-double ki = -0.01;
+
+PID pid;
 
 void servo_function() {
   int ret;
@@ -43,10 +38,9 @@ void servo_function() {
   double robot_pos;
   double robot_dpos;
   rm_axis_handle handle = 0;
-  clock_t start, end;
   float adResult = 0.0;
 
-  start = clock();
+  double start, end;
 
   SvoReadFromGui(&servo_svo);
 
@@ -94,41 +88,35 @@ void servo_function() {
 
     if (servo_svo.ForceFlag == ON) {
       // 读取压力值
-      // ADSingleV20(0, 0, &adResult);
-      ADContinuV20(0, 0, 512, 100000, adBuf);
-      for(i=0;i<50;i++) {
-        adResult += adBuf[i];
-      }
-      adResult /= 50.0;
+      start = GetCurrentTime();
+      ADSingleV20(0, 0, &adResult);
+      // ADContinuV20(0, 0, 512, 100000, adBuf);
+      // end = GetCurrentTime();
+      // for(i=0;i<512;i++) {
+      //   adResult += adBuf[i];
+      // }
+      // adResult /= 512.0;
       servo_svo.Curforce = (double)adResult;
 
       // PID控制
-      df = servo_svo.Curforce - servo_svo.Refforce;
-      omn_df += df;
-      uv = kp*df + ki*omn_df;
-      servo_svo.Refpos = servo_svo.Curpos + uv;
-      // if(servo_svo.Refpos <= 0) {
-      //   servo_svo.Refpos = 0;
-      //   omn_df = 0;
+      // df = servo_svo.Curforce - servo_svo.Refforce;
+      // omn_df += df;
+      // if(df-0.01 < 0) {
+      //   df = 0;
       // }
-      // else if (servo_svo.Refpos >= 10) {
-      //   servo_svo.Refpos = 10;
-      //   omn_df = 0;
-      // }
-      cmd_pos = servo_svo.Refpos;
+      // uv = kp*df + ki*omn_df;
+      // servo_svo.Refpos = servo_svo.Curpos + uv;
+      servo_svo.Refpos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
+      cmd_pos = (float)servo_svo.Refpos;
     }
 
     /* 发起运动指令
      * rm_move_absolute: 运动到绝对位置；
      * rm_push: 以规定力推动到相对位置；*/
-    // cmd_pos = servo_svo.Refpos - servo_svo.Curpos;
-    // rm_push(handle, 20, cmd_pos, 10);
-    // rm_move_absolute(handle, cmd_pos, 200, 3000, 3000, 0.1);
+    if(servo_svo.Curforce > 2.7) {cmd_pos = 0;}    // 压力预警
     rm_set_position(handle, cmd_pos);
 
-    end = clock();
-
-    servo_svo.temp = (double)(end-start)/CLOCKS_PER_SEC;
+    servo_svo.temp = end - start;
 
     /* 保存数据到公共数据库 */
     SvoWrite(&servo_svo);

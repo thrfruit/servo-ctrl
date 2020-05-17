@@ -6,10 +6,10 @@
 #include"../include/trajectory.h"
 #include"../include/system.h"
 #include"../include/servo.h"
-#include"../include/WzSerialPort.h"
+#include"../include/pidctrl.h"
 
 pthread_mutex_t servoMutex = PTHREAD_MUTEX_INITIALIZER;
-extern WzSerialPort serial;
+extern PID pid;
 
 // Shared variable
 SVO pSVO;
@@ -89,9 +89,9 @@ void SetSvo(SVO *data) {
   }
 
   if (data->ForceFlag == ON) {
-    // bool serial_flag = serial.open("/dev/ttyACM0", 115200, 0, 8, 1);
     // 重置PID控制器
-    omn_df = 0.0;
+    // omn_df = 0.0;
+    PID_Arg_Init(&pid, pSVO.Refpos);
   }
 
   pSVO.ServoFlag = ON;
