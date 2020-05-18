@@ -1,3 +1,9 @@
+/***********************************
+ * 文件名称：motion_axis.h
+ * 源 文 件：libMotorMaster.Sdk.so
+ * 功    能：夹爪控制接口 SDK
+ ***********************************/
+
 #ifndef _MOTION_H
 #define _MOTION_H
 

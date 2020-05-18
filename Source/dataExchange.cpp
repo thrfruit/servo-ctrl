@@ -1,18 +1,19 @@
-/* 不同线程和函数之间的数据交换
- *
- */
+/***********************************
+ * 文件名称：dataExchange.cpp
+ * 头 文 件：dataExchange.h
+ * 功    能：处理线程之间的数据交换;
+ *           文件读写;
+ ***********************************
+ * TODO:
+ * *********************************/
 
-#include"../include/common.h"
-#include"../include/trajectory.h"
-#include"../include/system.h"
-#include"../include/servo.h"
-#include"../include/pidctrl.h"
+#include "../include/common.h"
+#include "../include/dataexchange.h"
 
-pthread_mutex_t servoMutex = PTHREAD_MUTEX_INITIALIZER;
-extern PID pid;
-
+/* ============== 线程之间的数据传递 ================ */
 // Shared variable
 SVO pSVO;
+pthread_mutex_t servoMutex = PTHREAD_MUTEX_INITIALIZER;
 
 void SvoWrite(SVO *data) {
   pthread_mutex_lock(&servoMutex);
@@ -25,28 +26,6 @@ void SvoRead(SVO *data) {
   *data = pSVO;
   pthread_mutex_unlock(&servoMutex);
 }
-
-void SvoWriteFromServo(SVO *data)
-{
-    pthread_mutex_lock(&servoMutex);
-    pSVO=*data;
-    pthread_mutex_unlock(&servoMutex);
-}
-
-void SvoReadFromGui(SVO *data)
-{
-        pthread_mutex_lock(&servoMutex);
-        *data = pSVO;
-        pthread_mutex_unlock(&servoMutex);
-}
-
-void SvoReadFromDis(SVO *data)
-{
-        pthread_mutex_lock(&servoMutex);
-        *data = pSVO;
-        pthread_mutex_unlock(&servoMutex);
-}
-
 
 /*
  * 从键盘读取运动参数到当前线程
@@ -63,42 +42,61 @@ void ChangePosData(PATH *Path) {
   scanf("%lf", &Path->Goal);
 }
 
-/*
- * 开始伺服控制。清空命令堆栈，将当前轨迹放入堆栈。
- */
-void SetSvo(SVO *data) {
-  int ret;
-  double time;
-  extern double omn_df;
 
-  SvoWrite(data);
+/* ============== 文件处理 ================ */
+using namespace std;
 
-  initTrjBuff();
+// for saving the data
+int Exp_data_index = 0;
+SVO Exp_data[EXP_DATA_LENGTH];
 
-  if (data->PathFlag == ON) {
-    ret = PutTrjBuff(&pSVO.Path);
-    printf("ret = %d\n", ret);
-    if (ret == 1)
-      printf("PathBufferPut Error\n");
-    else {
-      printf("Done with PutTrjBuff.\n");
-      printf("Goal position is %f\n", pSVO.Path.Goal);
-    }
-    printf("> OUT frequency < %f [HZ]\n", pSVO.Path.Freq);
-    printf("> OUT mode < %d\n", pSVO.Path.Mode);
+
+void ExpDataSave(SVO *data) {
+  if(Exp_data_index < EXP_DATA_LENGTH) {
+    Exp_data[Exp_data_index] = *data;
+    Exp_data_index++;
   }
-
-  if (data->ForceFlag == ON) {
-    // 重置PID控制器
-    // omn_df = 0.0;
-    PID_Arg_Init(&pid, pSVO.Refpos);
-  }
-
-  pSVO.ServoFlag = ON;
-  pSVO.NewPathFlag = ON;
-  pSVO.PathtailFlag = OFF;
-
-  ResetTime();
-  time = GetCurrentTime();
-  SetStartTime(time);
 }
+
+void SaveDataReset() {
+  Exp_data_index = 0;
+}
+
+
+void ExpDataWrite() {
+  int i;
+  ofstream file1, file2;
+
+  // 此处路径从Cmake根目录填起
+  file1.open("data/data.position");
+  file2.open("data/data.force");
+
+  if(file1.is_open() & file2.is_open()) {
+    printf("Saving data ...\n");
+    file1 << std::left << setw(12) << "Time" << setw(12) <<"Curpos" 
+          << setw(12) <<"Refpos" << endl;
+    file2 << std::left << setw(12) << "Time" << setw(12) <<"Curforce" 
+          << setw(12) <<"Refforce" << endl;
+
+    for(i=0; i<Exp_data_index; i++) {
+      file1 << std::left << setw(12) << Exp_data[i].Time 
+            << setw(12) << Exp_data[i].Curpos 
+            << setw(12) <<Exp_data[i].Refpos 
+            << setw(12) <<Exp_data[i].temp
+            << endl;
+      file2 << std::left << setw(12) << Exp_data[i].Time
+            << setw(12) << Exp_data[i].Curforce
+            << setw(12) << Exp_data[i].Refforce
+            << setw(12) <<Exp_data[i].temp
+            << endl;
+    }
+
+    file1.close();
+    file2.close();
+    printf("Data saved.\n");
+  } 
+  else {
+    printf("open file failed\n");
+  }
+}
+

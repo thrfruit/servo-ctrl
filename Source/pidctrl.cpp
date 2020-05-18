@@ -1,14 +1,18 @@
-/****************************************************
+/***********************************
+ * 文件名称：pidctrl.cpp
+ * 头 文 件：pidctrl.h
+ * 功    能：实现PID控制
+ ***********************************
  * TODO:
- * 1. 添加变积分过程，加快消除静差的速度。
- * *************************************************/
+ * 添加变积分过程，加快消除静差的速度
+ * *********************************/
 
-#include"../include/pidctrl.h"
+#include "../include/pidctrl.h"
 
-void PID_Arg_Init(PID* pid, double initval){
-  pid->kp       = -0.08;
-  pid->ki       = -0.05;
-  pid->kd       = 0;
+void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
+  pid->kp       = -1*kp;
+  pid->ki       = -1*ki;
+  pid->kd       = -1*kd;
 
   pid->SetPoint = 0;
   pid->ActPoint = 0;

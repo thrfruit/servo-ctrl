@@ -1,58 +1,37 @@
-/*
- * servo.cpp
- * 伺服进程的
- */
+/***********************************
+ * 文件名称：servo.cpp
+ * 头 文 件：servo.h
+ * 功    能：伺服线程的实现;
+ ***********************************
+ * TODO:
+ * *********************************/
 
 #include "../include/servo.h"
 #include "../include/common.h"
-#include "../include/interface.h"
-#include "../include/motion_axis.h"
-#include "../include/system.h"
 #include "../include/trajectory.h"
-#include"../include/usb-daq-v20.h"
-#include"../include/pidctrl.h"
-#include <errno.h>
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <vector>
-
-int cnt = 0;
-float adBuf[1024];
+#include "../include/pidctrl.h"
 
 PID pid;
+float adBuf[1024];
+float adResult = 0.0;
 
 void servo_function(RmDriver *rm) {
-  int ret;
-  int i;
-  double curtime;
-  double cmd_pos;
-  double uv;
-  double df;
+  int ret, i;
   SVO servo_svo;
   PATH path;
+  double curtime;
+  double robot_pos, cmd_pos;
+  double start, end;    // shawn: calculate waste time
 
-  double robot_pos;
-  double robot_dpos;
-  rm_axis_handle handle = 0;
-  float adResult = 0.0;
-
-  double start, end;
-
-  SvoReadFromGui(&servo_svo);
-
-  // Get the current status of robot
+  /* Get the current status */
+  SvoRead(&servo_svo);
+  // Copy the status of Rm
   // robot_pos = rm.getPos();
   robot_pos = servo_svo.Refpos;
   servo_svo.Curpos = robot_pos;
-
   // Get current time
   curtime = GetCurrentTime();
   servo_svo.Time = curtime;
-
 
   // ----------- should be noticed ---------------
   if (servo_svo.PathFlag == ON & servo_svo.NewPathFlag == ON) {
@@ -80,17 +59,15 @@ void servo_function(RmDriver *rm) {
   if (servo_svo.ServoFlag == ON) {
     if (servo_svo.PathFlag == ON) {
       // 多项式轨迹插补
-      CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos,
-                  &servo_svo.Refdpos);
+      CalcRefPath(GetCurrentTime(), &servo_svo.Path, &servo_svo.Refpos);
       cmd_pos = servo_svo.Refpos;
-      // cmd_pos = servo_svo.Time;
     }
 
     if (servo_svo.ForceFlag == ON) {
       // 读取压力值
       start = GetCurrentTime();
-      ADSingleV20(0, 0, &adResult);
-      // ADContinuV20(0, 0, 512, 100000, adBuf);
+      ADSingleV20(0, 0, &adResult);    // 单次采集
+      // ADContinuV20(0, 0, 512, 100000, adBuf);    // 连续采集，一个数据包为512个数据
       // end = GetCurrentTime();
       // for(i=0;i<512;i++) {
       //   adResult += adBuf[i];
@@ -99,24 +76,15 @@ void servo_function(RmDriver *rm) {
       servo_svo.Curforce = (double)adResult;
 
       // PID控制
-      // df = servo_svo.Curforce - servo_svo.Refforce;
-      // omn_df += df;
-      // if(df-0.01 < 0) {
-      //   df = 0;
-      // }
-      // uv = kp*df + ki*omn_df;
-      // servo_svo.Refpos = servo_svo.Curpos + uv;
       servo_svo.Refpos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
       cmd_pos = (float)servo_svo.Refpos;
     }
 
-    /* 发起运动指令
-     * rm_move_absolute: 运动到绝对位置；
-     * rm_push: 以规定力推动到相对位置；*/
+    /* 发起运动指令 */
     if(servo_svo.Curforce > 2.7) {cmd_pos = 0;}    // 压力预警
     rm->setPos(cmd_pos);
 
-    servo_svo.temp = end - start;
+    servo_svo.temp = end - start;    // shawn: calculate waste time
 
     /* 保存数据到公共数据库 */
     SvoWrite(&servo_svo);
@@ -124,7 +92,45 @@ void servo_function(RmDriver *rm) {
     /* 将数据保存到队列，用于存档 */
     ExpDataSave(&servo_svo);
   }
+}
 
-  cnt++;
+/*
+ * 开始伺服控制。清空命令堆栈，将当前轨迹放入堆栈。
+ */
+void SetSvo(SVO *data) {
+  int ret;
+  double time;
+  extern double kp, ki, kd;
+
+  initTrjBuff();  // 初始化轨迹命令队列
+
+  if (data->PathFlag == ON) {
+    ret = PutTrjBuff(&data->Path);
+    printf("ret = %d\n", ret);
+    if (ret == 1)
+      printf("PathBufferPut Error\n");
+    else {
+      printf("Done with PutTrjBuff.\n");
+      printf("Goal position is %f\n", data->Path.Goal);
+    }
+    printf("> OUT frequency < %f [HZ]\n", data->Path.Freq);
+    printf("> OUT mode < %d\n", data->Path.Mode);
+  }
+
+  if (data->ForceFlag == ON) {
+    PID_Arg_Init(&pid, kp, ki, kd, data->Refpos);    // 重置PID控制器
+  }
+
+  // 设置伺服标志
+  data->ServoFlag = ON;
+  data->NewPathFlag = ON;
+  data->PathtailFlag = OFF;
+  
+  // 重置时间
+  ResetTime();
+  time = GetCurrentTime();
+  SetStartTime(time);
+
+  SvoWrite(data);    // 将数据同步到pSVO
 }
 

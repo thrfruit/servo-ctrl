@@ -1,6 +1,13 @@
+/***********************************
+ * 文件名称：rmctrl.cpp
+ * 头 文 件：rmctrl.h
+ * 功    能：定义夹爪类RmDriver及其成员函数
+ ***********************************
+ * TODO:
+ * *********************************/
 
-#include"../include/common.h"
-#include"../include/rmctrl.h"
+#include "../include/common.h"
+#include "../include/rmctrl.h"
 
 RmDriver::RmDriver(const char* port, int baudrate, uint8_t axis_id){
   rm_init();
