@@ -21,26 +21,25 @@
 
 #define MY_PRIORITY (49)
 #define MAX_SAFE_STACK (8 * 1024)
+#define SERVO_INTERVAL 8000000
 
-void *display_function(void *param);
+void *collect_function(void *param);
 void *interface_function(void *param);
 void DisplayMenu(void);
 void DisplayCurrentInformation(PATH path, int flag);
 
-struct shm_interface shm_servo_inter; //用于控制所有线程的结束--shm_servo_inter.status_control
-                                      //= EXIT_C三个线程都会结束
-pthread_mutex_t servo_inter_mutex = PTHREAD_MUTEX_INITIALIZER; //定义共享内存时用到的 互斥锁-全局
-// PTHREAD_MUTEX_INITIALIZER为 宏定义常量： { { 0, 0, 0, 0, 0, 0, { 0, 0 } } }
+struct shm_interface shm_servo_inter; // 线程结束的标志
+pthread_mutex_t servo_inter_mutex = PTHREAD_MUTEX_INITIALIZER; // 定义共享内存时用到的互斥锁-全局
 
 int shmid; // 共享内存标识符
-void *shm_addr = NULL; //存放共享内存的起始地址，用于后面的共享内存操作
-SVO key2intfc_svo; // gyh
-extern SVO pSVO;    // 各线程共享的全局变量
-pthread_mutex_t mymutex; //??这个extern什么意思，没在别的文件中找到变量mymutex的定义
+void *shm_addr = NULL;   // 存放共享内存的起始地址，用于后面的共享内存操作
+extern SVO pSVO;         // 各线程共享的全局变量
+pthread_mutex_t mymutex; // Shanw互斥锁
 pthread_cond_t rt_msg_cond;
 const char* port = "/dev/ttyS110";
 
-/* for test */
+/* Pre-fault our task */ 
+// 申请一块内存并初始化，且由于上面的操作，这块内存是被锁住的
 void stack_prefault(void) {
   unsigned char dummy[MAX_SAFE_STACK];
   memset(dummy, 0, MAX_SAFE_STACK); //初始化dummy[]所在的内存空间
@@ -48,20 +47,18 @@ void stack_prefault(void) {
 }
 
 int main(void) {
-
-  pthread_t interface_thread, display_thread; //创建线程标识符
-  int loop_flag = 0; //循环标志，在后面死循环中用到
-
-  shm_servo_inter.status_control = INIT_C; // INIT_C=0
   struct timespec t;        // 用于时间控制，linux系统的高精度时间变量，两个成员：秒 和 纳秒
-  struct sched_param param; //描述线程调度参数，获得或设置线程的调度参数时，会使用该结构体
-  int interval = 8000000;   /* 一个伺服周期内的纳秒数 */ 
+  struct sched_param param; // 描述线程调度参数，获得或设置线程的调度参数时会使用该结构体
+  int interval = SERVO_INTERVAL;  // 一个伺服周期内的纳秒数
 
-  /* connect to ur robot */
-  printf("\nExperiment Start\n");
-  SaveDataReset();
+  /*** User variables ***/
+  pthread_t interface_thread, collect_thread; //创建线程标识符
+  int loop_flag = 0;        // 循环标志，在后面死循环中用到
+  shm_servo_inter.status_control = INIT_C; 
+  /*** User variables ***/
 
-  // Init RmClawer
+  /*** Initialization ***/
+  // Connect to RmClawer
   RmDriver rm(port, 115200, 0);
   rm.goHome();
   rm.setMotion(100, 3000, 3000);
@@ -70,154 +67,128 @@ int main(void) {
   pSVO.Refpos = rm.getPos();
   std::cout << "Curposition" << pSVO.Refpos << std::endl;
 
-  // Init UsbV20
+  // Connect to UsbV20
   if (-1 == OpenUsbV20()) {
     printf("...... UsbV20! Open! Failed! ......");
   }
 
-  /* Declare ourself as a real time task */
-  param.sched_priority = MY_PRIORITY; // 分配给进程的优先级，此处设置为49
+  // Reset save buffer
+  SaveDataReset(); // 实验数据的存储有关，初始化 控制往文件里写数据 的变量
 
-  if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) //设置线程的调度策略和调度参数
-  { //第一个参数是0表示要设置调度参数的目标线程调用该函数的线程-就是这个mian函数线程
+  // 创建共享内存
+  shmid = shmget((key_t)1234, 72, 0666 | IPC_CREAT);
+  if (shmid == -1) {
+    fprintf(stderr, "shmat failed\n");
+    exit(EXIT_FAILURE); //失败地退出函数
+  }
+  shm_addr = (void *)shmat(shmid, 0, 0); // 将共享内存连接到当前进程的地址空间(映射共享内存)
+  /*** Initialization ***/
+
+  /* Declare ourself as a real time task */
+  param.sched_priority = MY_PRIORITY;  // 设置进程的优先级
+
+  // 设置线程的调度策略和调度参数
+  if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
     perror("sched_setscheduler failed\n");
     exit(-1);
   }
 
   /* Lock memory */
-  if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {//锁住内存,避免这段内存被操作系统调度到swap空间，mlockall不仅锁定当前的地址空间，也要锁定将来申请的地址空间
+  // 锁住内存， mlockall不仅锁定当前的地址空间，也要锁定将来申请的地址空间
+  if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
     perror("mlockall failed");
     exit(-2);
   }
 
-  stack_prefault(); //申请一块8*1024大小的内存并初始化，且由于上面的操作，这块内存是被锁住的、独占的，--其实就是新建并初始化了个数组
+  stack_prefault();
   clock_gettime(CLOCK_MONOTONIC, &t); //读取当前精确时间给t
-                                      /* start after one second */
-  t.tv_sec++;                         //一秒后启动控制回路
-              ////t.tv_sec++，然后后面第一次进入循环时，clock_nanosleep()函数就会睡到当前时间加一秒，也就是睡一秒（当然，这中间隔这么多行程序的运行时间就忽略了）
 
-  /* 启动另外两个线程 */
-  /* start interface thread */
-  if (pthread_create(&interface_thread, NULL, interface_function, NULL)) //启动线程interface_thread，第三个参数是线程运行函数（interface_function）
-  {
+  /* start after one second */
+  t.tv_sec++;    // 一秒后启动控制回路，第一次伺服循环开始于当前时候下一秒
+
+  /*** Start user's thread ***/
+  if (pthread_create(&interface_thread, NULL, interface_function, NULL)) {
     perror("interface_thread create\n");
     exit(1);
   }
 
-  /* start display thread */
-  if (pthread_create(&display_thread, NULL, display_function, NULL)) {//同上
+  if (pthread_create(&collect_thread, NULL, collect_function, NULL)) {
     perror("Display_thread create\n");
     exit(1);
   }
-
-  /* reset save buffer */
-  SaveDataReset(); //实验数据的存储有关，初始化 控制往文件里写数据 的变量
-  /*创建共享内存*/
-  shmid = shmget((key_t)1234, 72, 0666 | IPC_CREAT); //共享内存段名称为1234,长度为72，0666表示读写权限，创建成功返回这段内存的标志，失败返回-1
-  if (shmid == -1) {
-    fprintf(stderr, "shmat failed\n");
-    exit(EXIT_FAILURE); //失败地退出函数
-  }
-  /*创建共享内存*/
-  /*将共享内存连接到当前进程的地址空间(映射共享内存)*/
-  shm_addr = (void *)shmat(shmid, 0, 0);
+  printf("\nExperiment Start\n");
+  /*** Start user's thread ***/
 
   while (1) {
+    /* 设置退出条件 */
     if (shm_servo_inter.status_control == EXIT_C) {
       printf("Program end\n");
-      /*分离共享内存*/
-      if (shmdt(shm_addr) == -1) {
+      if (shmdt(shm_addr) == -1) {    // 分离共享内存
         printf("shmdt error!\n");
         exit(1);
       }
-      /*分离共享内存*/
       break;
     }
+    /* 设置退出条件 */
 
     /* wait until next shot */
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL); //绝对睡眠，基于CLOCK_MONOTONIC时钟，睡眠到参数t指定的时间。
-    //在这里设定执行到特定时刻时将执行权限交给其他的进程．
-    //時刻が来たら実行権限を復活させて優先的に実行される
-    /* do the stuff */
-    /* reset */
-    if (loop_flag == 0){ //循环进行第一次时，初始化时间
+    // 基于CLOCK_MONOTONIC时钟，睡眠到参数t指定的时间，随后将执行权限交给其他的进程
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL); 
+
+    /*** do the stuff ***/
+    if (loop_flag == 0){    // 循环进行第一次时，初始化时间
       ResetTime();
       loop_flag = 1;
     }
 
-    servo_function(&rm);
+    servo_function(&rm);    // 伺服程序
+    /*** do the stuff ***/
 
     /* calculate next shot */
-    t.tv_nsec += interval; //次にプロセスが復帰する時刻を設定  // tv_nsec ：纳秒
+    t.tv_nsec += interval;
 
-    while (t.tv_nsec >= NSEC_PER_SEC) //时间进制，保证时间纳秒加到上限就进位
-    {                                 //桁の繰り上げ
+    //时间进制，保证时间纳秒加到上限就进位
+    while (t.tv_nsec >= NSEC_PER_SEC) {
       t.tv_nsec -= NSEC_PER_SEC;
       t.tv_sec++;
     }
-  } //死循环结尾，这个死循环其实就一直在干一件事，睡8ms让机械臂动一下，一遍一遍的睡8ms动一下
+  } // 伺服线程的死循环
 
-  /* 运行到这，说明上面的死循环结束了，即用户选择了退出 */
-  if (pthread_join(interface_thread, NULL)) {//用于等待其他线程结束：当调用 pthread_join()
-                 //时，当前线程会处于阻塞状态，直到被调用的线程结束后，当前线程才会重新开始执行。
+  /*** 等待子线程结束 ***/
+  if (pthread_join(interface_thread, NULL)) {    // 等待collect线程结束
     perror("pthread_join at interface_thread\n");
     exit(1);
   }
-  if (pthread_join(display_thread, NULL)) {//等待display线程结束
-    perror("pthread_join at displya_thread\n");
+  if (pthread_join(collect_thread, NULL)) {     // 等待display线程结束
+    perror("pthread_join at collect_thread\n");
+    exit(1);
   }
+  /*** 等待子线程结束 ***/
 
-  // close IO
-  ExpDataWrite(); //存数据，往文件里写刚才存在结构体变量Exp_data里的数据
+  /*** 实验结束，处理实验数据 ***/
+  rm.close();         // 断开夹爪
+  ExpDataWrite();     // 保持实验存数据 (Exp_data[i])
+  /*** 实验结束，处理实验数据 ***/
 
-  // 终止程序
-  exit(1);
+  exit(1);    // 退出程序
 }
 
-/* display线程运行的函数，用于交互界面--就是往屏幕上显示信息*/
-/* 如果开始了伺服（ServoFlag=ON） */
-/* 开始位置伺服运动时(第一个if)：刷刷刷地疯狂显示【现在的时间、现在的末端位姿、目标的末端位姿】
- */
-/* 开始关节角度伺服运动时(第二个if)：显示的是
- * 【现在的时间、现在的关节角度、目标的关节角度】 */
-void *display_function(void *param) {
-  int status_interface, i; // status_interface后面就没用到，i用于循环
-  int loop_counter;        //这个后面没用到
+
+/* ==================== User defined Function ==================== */
+/* 采集相机数据、计算压力信号 */
+void *collect_function(void *param) {
   SVO display_svo;         //这是最主要的存放数据的变量
   double time;
-  double jnt_angle[6]; //用来存放最后算出来的角度
-
-  loop_counter = 0; //没用
 
   do {
-    int loop_counter;
-    double time;
-    double pos;
-    SVO display_svo;
+    time = GetCurrentTime();
+    SvoRead(&display_svo); // Read data
 
-    loop_counter = 0;
+    display_svo.Refforce = 1.2 + 1*sin(time);
 
-    pthread_mutex_lock(&mymutex);
-    pthread_cond_wait(&rt_msg_cond, &mymutex);
-    pthread_mutex_unlock(&mymutex);
-
-    do {
-      time = GetCurrentTime();
-      SvoReadFromDis(&display_svo); // Read data
-      if ((display_svo.ServoFlag == ON) &&
-          (GetOffsetTime() < (1.0 / (double)display_svo.Path.Freq))) {
-        printf("Time:%0.1f\n", time);
-        printf("Current position of claw: %.2f\n", display_svo.Curpos);
-        printf("Reference position of claw: %.2f\n", display_svo.Refpos);
-        printf("Curforce signal: %.2f\n", display_svo.Curforce);
-      }
-      usleep(25000); // Delay for 25ms
-    } while (shm_servo_inter.status_control != EXIT_C);
-    printf("End of Display Function.\n");
-    return ((void *)0);
-  } while (shm_servo_inter.status_control !=
-           EXIT_C); //只要用户没退出，这个线程就一直在这里死循环着
-  printf("\nEnd of Display Function\n");
+    SvoWrite(&display_svo);
+    usleep(25000);         // 采集间隔
+  } while (shm_servo_inter.status_control != EXIT_C);
   return ((void *)0);
 }
 

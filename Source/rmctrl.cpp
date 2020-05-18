@@ -39,6 +39,9 @@ void RmDriver::goHome() {
 }
 
 void RmDriver::close() {
+  rm_set_position(RmDriver::handle, 2);
+  while(rm_is_moving(RmDriver::handle));
   rm_close_axis(RmDriver::handle);
+  printf("Disconnect to RmDriver [%d]\n", RmDriver::handle);
 }
 
