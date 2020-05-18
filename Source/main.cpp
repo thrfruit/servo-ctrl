@@ -6,6 +6,7 @@
 #include "../include/system.h"
 #include "../include/trajectory.h"
 #include "../include/usb-daq-v20.h"
+#include "../include/rmctrl.h"
 /*shared memory header*/
 #include <errno.h>
 #include <iostream>
@@ -34,9 +35,10 @@ pthread_mutex_t servo_inter_mutex = PTHREAD_MUTEX_INITIALIZER; //定义共享内
 int shmid; // 共享内存标识符
 void *shm_addr = NULL; //存放共享内存的起始地址，用于后面的共享内存操作
 SVO key2intfc_svo; // gyh
-extern SVO pSVO; //!!最主要的一个变量，结构体SVO的定义在common.h中!!，该变量定义在dataExachange.cpp中，存在于这两个文件中
+extern SVO pSVO;    // 各线程共享的全局变量
 pthread_mutex_t mymutex; //??这个extern什么意思，没在别的文件中找到变量mymutex的定义
 pthread_cond_t rt_msg_cond;
+const char* port = "/dev/ttyS110";
 
 /* for test */
 void stack_prefault(void) {
@@ -48,29 +50,24 @@ void stack_prefault(void) {
 int main(void) {
 
   pthread_t interface_thread, display_thread; //创建线程标识符
-  int loop_flag; //循环标志，在后面死循环中用到
-  loop_flag = 0;
+  int loop_flag = 0; //循环标志，在后面死循环中用到
 
   shm_servo_inter.status_control = INIT_C; // INIT_C=0
-  struct timespec t; //，用于时间控制，linux系统的高精度时间变量，两个成员：秒 和 纳秒
-  struct sched_param param; //描述线程调度参数，获得或设置线程的调度参数时，会使用sched_param结构
-  int interval = 8000000;   /* 8 ms*/ // 8000000纳秒，后面用于加给 t.tv_nsec(Nanosecond)
+  struct timespec t;        // 用于时间控制，linux系统的高精度时间变量，两个成员：秒 和 纳秒
+  struct sched_param param; //描述线程调度参数，获得或设置线程的调度参数时，会使用该结构体
+  int interval = 8000000;   /* 一个伺服周期内的纳秒数 */ 
 
   /* connect to ur robot */
   printf("\nExperiment Start\n");
   SaveDataReset();
 
   // Init RmClawer
-  rm_init();
-  rm_axis_handle handle = rm_open_axis_modbus_rtu("/dev/ttyS110", 115200, 0);
-  rm_reset_error(handle);
-  rm_go_home(handle);
-  rm_push(handle, 10, 7.5, 10);
-  // rm_move_absolute(handle, 2, 10, 3000, 3000, 0.1);
-  rm_config_motion(handle, 100, 3000, 3000);
-
+  RmDriver rm(port, 115200, 0);
+  rm.goHome();
+  rm.setMotion(100, 3000, 3000);
+  rm.setPos(2);
   sleep(1);
-  pSVO.Refpos = rm_read_current_position(handle);
+  pSVO.Refpos = rm.getPos();
   std::cout << "Curposition" << pSVO.Refpos << std::endl;
 
   // Init UsbV20
@@ -79,8 +76,8 @@ int main(void) {
   }
 
   /* Declare ourself as a real time task */
-  param.sched_priority = MY_PRIORITY; // sched_priority代表分配给进程的优先级，此处设置为49
-                   // //スケジューラでのプロセスの優先順位を変更する(99が優先順位最大)
+  param.sched_priority = MY_PRIORITY; // 分配给进程的优先级，此处设置为49
+
   if (sched_setscheduler(0, SCHED_FIFO, &param) == -1) //设置线程的调度策略和调度参数
   { //第一个参数是0表示要设置调度参数的目标线程调用该函数的线程-就是这个mian函数线程
     perror("sched_setscheduler failed\n");
@@ -148,7 +145,7 @@ int main(void) {
       loop_flag = 1;
     }
 
-    servo_function();
+    servo_function(&rm);
 
     /* calculate next shot */
     t.tv_nsec += interval; //次にプロセスが復帰する時刻を設定  // tv_nsec ：纳秒
@@ -233,24 +230,11 @@ void *interface_function(void *param) {
   int command, i;
 
   SVO interface_svo; //存放在这个线程中 产生的机器人控制信息，最后都会传给pSVO
-
-  double c;
-  printf("Executing interface function\n");
-
-  DisplayMenu(); //显示选项信息
-
-  do {
-
-  int interface_counter;
-  interface_counter = 0;
-  int end = 1;
-  int command;
-  SVO interface_svo;
-
   SvoRead(&interface_svo);
 
   printf("Executing interface function\n");
-  DisplayMenu();
+  DisplayMenu(); //显示选项信息
+
   do {
     // Display the current of the robot:
     // Wait command
@@ -300,12 +284,8 @@ void *interface_function(void *param) {
     interface_counter++;
   } while (end);
   sleep(4);
-  // rm_close_axis(0);
   printf("End of Experiment\n");
   return 0;
-  } while (end);
-  sleep(5);
-  printf("End of Experiment\n");
 }
 
 void DisplayMenu(void) {

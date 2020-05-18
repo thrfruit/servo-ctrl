@@ -70,9 +70,9 @@ double Calc1JiTraje(double orig, double goal, double freq, double time)
 }
 
 // Sin函数的轨迹插值
-double CalcSinTraje(double time) {
+double CalcSinTraje(double freq, double time) {
   double ref;
-  ref = 6 + 6*sin(2*time);
+  ref = 6 + 6*sin(freq*time);
   return ref;
 }
 

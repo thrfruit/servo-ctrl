@@ -25,7 +25,7 @@ float adBuf[1024];
 
 PID pid;
 
-void servo_function() {
+void servo_function(RmDriver *rm) {
   int ret;
   int i;
   double curtime;
@@ -45,7 +45,7 @@ void servo_function() {
   SvoReadFromGui(&servo_svo);
 
   // Get the current status of robot
-  // robot_pos = rm_read_current_position(handle);
+  // robot_pos = rm.getPos();
   robot_pos = servo_svo.Refpos;
   servo_svo.Curpos = robot_pos;
 
@@ -114,7 +114,7 @@ void servo_function() {
      * rm_move_absolute: 运动到绝对位置；
      * rm_push: 以规定力推动到相对位置；*/
     if(servo_svo.Curforce > 2.7) {cmd_pos = 0;}    // 压力预警
-    rm_set_position(handle, cmd_pos);
+    rm->setPos(cmd_pos);
 
     servo_svo.temp = end - start;
 
