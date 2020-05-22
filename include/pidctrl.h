@@ -19,6 +19,7 @@ typedef struct{
   double kp, ki, kd;  // PID控制系数
   double u;           // 反馈值(输出信号)
   double omn_err;     // 误差积分
+  double diff_err;    // 误差微分
 
   double u_max;       // 输出信号上限
   double u_min;       // 输出信号下限

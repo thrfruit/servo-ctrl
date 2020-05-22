@@ -14,6 +14,7 @@
 PID pid;
 float adBuf[1024];
 float adResult = 0.0;
+int cnt = 0;
 
 void servo_function(RmDriver *rm) {
   int ret, i;
@@ -66,14 +67,17 @@ void servo_function(RmDriver *rm) {
     if (servo_svo.ForceFlag == ON) {
       // 读取压力值
       start = GetCurrentTime();
-      ADSingleV20(0, 0, &adResult);    // 单次采集
-      // ADContinuV20(0, 0, 512, 100000, adBuf);    // 连续采集，一个数据包为512个数据
-      // end = GetCurrentTime();
-      // for(i=0;i<512;i++) {
-      //   adResult += adBuf[i];
-      // }
-      // adResult /= 512.0;
-      servo_svo.Curforce = (double)adResult;
+      if(cnt%2) {
+        ADSingleV20(0, 0, &adResult);    // 单次采集
+        // ADContinuV20(0, 0, 512, 100000, adBuf);    // 连续采集，一个数据包为512个数据
+        // end = GetCurrentTime();
+        // for(i=0;i<512;i++) {
+        //   adResult += adBuf[i];
+        // }
+        // adResult /= 512.0;
+      }
+      servo_svo.temp = pid.omn_err;
+      servo_svo.Curforce = (double)(100/(2.7-adResult)-40);
 
       // PID控制
       servo_svo.Refpos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
@@ -81,10 +85,10 @@ void servo_function(RmDriver *rm) {
     }
 
     /* 发起运动指令 */
-    if(servo_svo.Curforce > 2.7) {cmd_pos = 0;}    // 压力预警
+    if(servo_svo.Curforce > 450) {cmd_pos = 0;}    // 压力预警
     rm->setPos(cmd_pos);
 
-    servo_svo.temp = end - start;    // shawn: calculate waste time
+    // servo_svo.temp = end - start;    // shawn: calculate waste time
 
     /* 保存数据到公共数据库 */
     SvoWrite(&servo_svo);
@@ -92,6 +96,7 @@ void servo_function(RmDriver *rm) {
     /* 将数据保存到队列，用于存档 */
     ExpDataSave(&servo_svo);
   }
+  cnt++;
 }
 
 /*

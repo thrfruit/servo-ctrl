@@ -17,9 +17,9 @@ int baudrate = 115200;
 uint8_t axis_id = 0;
 
 // PID控制参数
-double kp = 0.08;
-double ki = 0.05;
-double kd = 0;
+double kp = 0.00008;
+double ki = 0.0000;
+double kd = 0.00008;
 /*** 接口常量 ***/
 
 /*** User's global variables ***/
@@ -148,6 +148,11 @@ int main(void) {
     }
   } // 伺服线程的死循环
 
+  /*** 实验结束，处理实验数据 ***/
+  rm.close();         // 断开夹爪
+  ExpDataWrite();     // 保持实验存数据 (Exp_data[i])
+  /*** 实验结束，处理实验数据 ***/
+
   /*** 等待子线程结束 ***/
   if (pthread_join(interface_thread, NULL)) {    // 等待collect线程结束
     perror("pthread_join at interface_thread\n");
@@ -158,11 +163,6 @@ int main(void) {
     exit(1);
   }
   /*** 等待子线程结束 ***/
-
-  /*** 实验结束，处理实验数据 ***/
-  rm.close();         // 断开夹爪
-  ExpDataWrite();     // 保持实验存数据 (Exp_data[i])
-  /*** 实验结束，处理实验数据 ***/
 
   exit(1);    // 退出程序
 }
@@ -178,7 +178,7 @@ void *collect_function(void *param) {
     time = GetCurrentTime();
     SvoRead(&display_svo); // Read data
 
-    display_svo.Refforce = 1.2 + 1*sin(time);
+    display_svo.Refforce = 200 + 50*sin(0.5*time);
 
     SvoWrite(&display_svo);
     usleep(25000);         // 采集间隔
@@ -194,9 +194,7 @@ void *interface_function(void *param) {
   int end = 1; //该线程函数的结束标志，用户选择e:退出，则归0，退出循环
   int command, i;
   double time;
-
   SVO interface_svo; //存放在这个线程中 产生的机器人控制信息，最后都会传给pSVO
-  SvoRead(&interface_svo);
 
   printf("Executing interface function\n");
   DisplayMenu(); //显示选项信息
@@ -207,6 +205,7 @@ void *interface_function(void *param) {
     printf("Please hit any key\n");
 
     command = getchar();
+    SvoRead(&interface_svo);
     switch (command) {
       case 'c':
       case 'C':
@@ -218,6 +217,7 @@ void *interface_function(void *param) {
         scanf("%lf", &interface_svo.Refforce);
         interface_svo.ForceFlag = ON;
         interface_svo.PathFlag = OFF;
+        SvoWrite(&interface_svo);
         break;
       case 'p':
       case 'P':
@@ -226,6 +226,7 @@ void *interface_function(void *param) {
         ChangePosData(&interface_svo.Path);
         interface_svo.ForceFlag = OFF;
         interface_svo.PathFlag = ON;
+        SvoWrite(&interface_svo);
         break;
       case 's':
       case 'S':
@@ -234,7 +235,6 @@ void *interface_function(void *param) {
         break;
       case 'i':
       case 'I':
-        SvoRead(&interface_svo);
         DisplayCurrentInformation();
         break;
       case 'e':
@@ -248,7 +248,7 @@ void *interface_function(void *param) {
     }
     interface_counter++;
   } while (end);
-  sleep(4);
+  // sleep(4);
   printf("End of Experiment\n");
   return 0;
 }

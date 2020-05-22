@@ -20,13 +20,14 @@ void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
   pid->err      = 0;
   pid->err_last = 0;
   pid->omn_err  = 0;
+  pid->diff_err = 0;
 
   pid->u_max    = 10;
   pid->u_min    = 2;
 }
 
 double PID_Ctrl(PID* pid, double curval, double goal){
-  int kc;    // 积分分离标志
+  int fi, fd;    // 积分, 微分分离标志
 
   /* 接收输入参数 */
   pid->SetPoint = goal;
@@ -37,38 +38,42 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   pid->err = pid->ActPoint - pid->SetPoint;
 
   /* 积分项 */
-  if(std::abs(pid->err) > 0.2) {   // 误差过大时停用积分项
-    kc = 0;
-  }
-  else if(std::abs(pid->err) < 0.02) {    // 在误差允许范围内时返回当前输出量
-    return pid->u;
+  if(std::abs(pid->err) > 150) {   // 误差过大时停用积分项和微分项
+    fi = 0;
+    fd = 0;
   }
   else {
-    kc = 1;
+    fi = 1;
+    fd = 1;
     // 输出信号达到上限，只计算正积分 (因为PID系数为负)
-    if(pid->ActPoint-pid->u_max>0) {
+    if(pid->u-pid->u_max>0) {
       if(pid->err > 0) {
-        // pid->omn_err += pid->err;
-        pid->omn_err += (pid->err + pid->err_last)/2;    // 梯形积分
+        pid->omn_err += pid->err;
+        // pid->omn_err += (pid->err + pid->err_last)/2;    // 梯形积分
       }
     }
     // 输出信号达到下限，只计算负积分 (因为PID系数为负)
-    else if (pid->ActPoint-pid->u_min<0) {
+    else if (pid->u-pid->u_min<0) {
       if(pid->err < 0) {
-        // pid->omn_err += pid->err;
-        pid->omn_err += (pid->err + pid->err_last)/2;
+        pid->omn_err += pid->err;
+        // pid->omn_err += (pid->err + pid->err_last)/2;
       }
     }
     else{
-      pid->omn_err += (pid->err + pid->err_last)/2;
+      pid->omn_err += pid->err;
+      // pid->omn_err += (pid->err + pid->err_last)/2;
     }
   }
   
   /* 微分项*/
+  pid->diff_err = pid->err - pid->err_last;
   pid->err_last = pid->err;
 
   /* 增量式PID控制 */
-  pid->u += pid->kp*pid->err + kc*pid->ki*pid->omn_err;
+  // if(std::abs(pid->err) < 50) {    // 在误差允许范围内时保持输出量不变
+  //   return pid->u;
+  // }
+  pid->u += pid->kp*pid->err + fi*pid->ki*pid->omn_err + fd*pid->kd*pid->err_last;
 
   return pid->u;
 }
