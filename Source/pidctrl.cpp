@@ -28,6 +28,7 @@ void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
 
 double PID_Ctrl(PID* pid, double curval, double goal){
   int fi, fd;    // 积分, 微分分离标志
+  float fp;      // 比例项分段系数
 
   /* 接收输入参数 */
   pid->SetPoint = goal;
@@ -37,12 +38,17 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   /* 比例项 */
   pid->err = pid->ActPoint - pid->SetPoint;
 
+
   /* 积分项 */
   if(std::abs(pid->err) > 150) {   // 误差过大时停用积分项和微分项
     fi = 0;
     fd = 0;
   }
-  else {
+  // else if(std::abs(pid->err) < 10) {    // 在误差允许范围内时保持输出量不变
+  //     // pid->err = 0;
+  //     return pid->u;
+  //   }
+  else{
     fi = 1;
     fd = 1;
     // 输出信号达到上限，只计算正积分 (因为PID系数为负)
@@ -69,11 +75,16 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   pid->diff_err = pid->err - pid->err_last;
   pid->err_last = pid->err;
 
+  /* 比例项 */
+  if (pid->ActPoint > 220) {
+    fp = 0.5;
+  }
+  else{
+    fp = 1;
+  }
+
   /* 增量式PID控制 */
-  // if(std::abs(pid->err) < 50) {    // 在误差允许范围内时保持输出量不变
-  //   return pid->u;
-  // }
-  pid->u += pid->kp*pid->err + fi*pid->ki*pid->omn_err + fd*pid->kd*pid->err_last;
+  pid->u += fp*pid->kp*pid->err + fi*pid->ki*pid->omn_err + fd*pid->kd*pid->err_last;
 
   return pid->u;
 }

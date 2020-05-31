@@ -178,7 +178,7 @@ void *collect_function(void *param) {
     time = GetCurrentTime();
     SvoRead(&display_svo); // Read data
 
-    display_svo.Refforce = 200 + 50*sin(0.5*time);
+    display_svo.Refforce = 150 + 50*sin(0.5*time);
 
     SvoWrite(&display_svo);
     usleep(25000);         // 采集间隔
