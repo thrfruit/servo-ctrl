@@ -67,9 +67,9 @@ void ExpDataWrite() {
   int i;
   ofstream file1, file2;
 
-  // 此处路径从Cmake根目录填起
-  file1.open("data/data.position");
-  file2.open("data/data.force");
+  // 此处路径从运行路径填起
+  file1.open("../data/data.position");
+  file2.open("../data/data.force");
 
   if(file1.is_open() & file2.is_open()) {
     printf("Saving data ...\n");
