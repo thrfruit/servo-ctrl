@@ -20,3 +20,24 @@
 1. CMakeList.txt中链接库命名格式有误;
 2. 链接库路径有误;
 
+#### undefined reference to `std::thread::_State::~_State()@GLIBCXX_3.4.22'
+可能原因:
+1. 使用gcc编译出错, 改用g++即可;
+```
+set(CMAKE_CXX_COMPILER g++)    # 解决对'@GLIBCXX_3.4.20'未定义的引用的问题
+```
+
+#### libstdc++.so.6: version `GLIBCXX_3.4.22' not found
+可能原因:
+1. libstdc++库需要更新;
+`strings /usr/lib/x86_64-linux-gnu/libstdc++.so.6 | grep GLIBCXX`
+可查看当前版本的libstdc++.so.6包含的GLIBCXX;
+```
+# 安装libstdc++
+sudo apt-get install libstdc++6
+# 若还未解决,则可终端运行如下命令
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test 
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get dist-upgrade
+```

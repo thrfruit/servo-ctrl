@@ -22,6 +22,7 @@
 #include "system.h"
 #include "rmctrl.h"
 #include "usb-daq-v20.h"
+#include "rscv.h"
 #include "dataexchange.h"
 
 /* We use 49 as the PRREMPT_RT use 50 as the priority of 

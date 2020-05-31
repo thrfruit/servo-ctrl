@@ -61,7 +61,8 @@ int main(void) {
   // Connect to RmClawer
   RmDriver rm(port, baudrate, axis_id);
   rm.goHome();
-  rm.setMotion(1000, 3000, 3000);
+  // rm.setMotion(1000, 3000, 3000);
+  rm.setPush(10, 10, 10);
   rm.setPos(2);
   sleep(1);
   pSVO.Refpos = rm.getPos();
@@ -107,7 +108,7 @@ int main(void) {
     exit(1);
   }
 
-  if (pthread_create(&collect_thread, NULL, collect_function, NULL)) {
+  if (pthread_create(&collect_thread, NULL, rscv, NULL)) {
     perror("Display_thread create\n");
     exit(1);
   }
