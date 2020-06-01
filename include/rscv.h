@@ -24,7 +24,14 @@
 #include <opencv2/imgproc/imgproc.hpp>    // 图像处理函数
 #include <opencv2/core/core.hpp>    // 新式C++风格的结构以及数学运算
 
+/* Extral headers */
+#include "dataexchange.h"
+#include "system.h"
+#include <math.h>
+
+
 #define px2mm  0.153846
+#define gravity 9.8
 
 
 void *rscv (void *param);

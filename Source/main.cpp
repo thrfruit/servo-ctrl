@@ -62,11 +62,12 @@ int main(void) {
   RmDriver rm(port, baudrate, axis_id);
   rm.goHome();
   // rm.setMotion(1000, 3000, 3000);
-  rm.setPush(10, 10, 10);
+  rm.setPush(15, 10, 10);
   rm.setPos(2);
   sleep(1);
   pSVO.Refpos = rm.getPos();
   std::cout << "Curposition" << pSVO.Refpos << std::endl;
+  pSVO.ServoFlag = ON;
 
   // Reset save buffer
   SaveDataReset();    // 初始化待存档数据的队列

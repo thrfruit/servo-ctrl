@@ -68,8 +68,8 @@ void ExpDataWrite() {
   ofstream file1, file2;
 
   // 此处路径从运行路径填起
-  file1.open("../data/data.position");
-  file2.open("../data/data.force");
+  file1.open("./data/data.position");
+  file2.open("./data/data.force");
 
   if(file1.is_open() & file2.is_open()) {
     printf("Saving data ...\n");
