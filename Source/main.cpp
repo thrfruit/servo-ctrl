@@ -67,7 +67,7 @@ int main(void) {
   sleep(1);
   pSVO.Refpos = rm.getPos();
   std::cout << "Curposition" << pSVO.Refpos << std::endl;
-  pSVO.ServoFlag = ON;
+  pSVO.ForceFlag = ON;
 
   // Reset save buffer
   SaveDataReset();    // 初始化待存档数据的队列
@@ -233,7 +233,10 @@ void *interface_function(void *param) {
       case 's':
       case 'S':
         printf("Start\n");
+        // pSVO.ServoFlag = ON;
+        pthread_cond_broadcast(&rt_msg_cond);
         SetSvo(&interface_svo);
+        pSVO.ServoFlag = ON;
         break;
       case 'i':
       case 'I':
@@ -271,9 +274,9 @@ void DisplayCurrentInformation(){
   SvoRead(&display_info_svo);
 
   printf("----------------- Current Information -------------------\n");
-  printf("Path frequency = %f [HZ]\n", display_info_svo.Path.Freq);
-  printf("Current position[mm]: %.2f\n", display_info_svo.Curpos);
-  printf("Goal position[mm]: %.2f\n", display_info_svo.Path.Goal);
+  printf("Last position[mm]: %.2f\n", display_info_svo.Lasth);
+  printf("Current position[mm]: %.2f\n", display_info_svo.Curh);
   printf("Current Force[N]: %.2f\n", display_info_svo.Curforce);
+  printf("Current Time[s]: %.2f\n", display_info_svo.Time);
 }
 

@@ -41,3 +41,8 @@ sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get dist-upgrade
 ```
+
+#### 在图像处理线程中读取全局结构体pSVO中的时间始终为0
+可能原因:
+1. 将复制结构体pSVO的命令放到图像处理函数之后(原因未明);
+

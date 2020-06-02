@@ -65,29 +65,51 @@ void SaveDataReset() {
 
 void ExpDataWrite() {
   int i;
-  ofstream file1, file2;
+  ofstream file1, file2, file3;
 
   // 此处路径从运行路径填起
   file1.open("./data/data.position");
   file2.open("./data/data.force");
+  file3.open("./data/data.adaptation");
 
   if(file1.is_open() & file2.is_open()) {
     printf("Saving data ...\n");
-    file1 << std::left << setw(12) << "Time" << setw(12) <<"Curpos" 
-          << setw(12) <<"Refpos" << endl;
+    file1 << std::left << setw(12) << "Time" << setw(12) <<"Cur_h"
+          << setw(12) <<"Last_h" 
+          << setw(12) <<"Refforce" 
+          << endl;
     file2 << std::left << setw(12) << "Time" << setw(12) <<"Curforce" 
           << setw(12) <<"Refforce" << endl;
+    file3 << std::left 
+          << setw(12) << "hr"
+          << setw(12) << "s"
+          << setw(12) << "dh"
+          << setw(12) << "a_hat"
+          << setw(12) << "b_hat"
+          << setw(12) << "c_hat"
+          << setw(12) << "Refforce"
+          << endl;
 
     for(i=0; i<Exp_data_index; i++) {
       file1 << std::left << setw(12) << Exp_data[i].Time 
-            << setw(12) << Exp_data[i].Curpos 
-            << setw(12) <<Exp_data[i].Refpos 
+            << setw(12) << Exp_data[i].Curh 
+            << setw(12) <<Exp_data[i].Lasth 
+            << setw(12) <<Exp_data[i].Refforce
             << setw(12) <<Exp_data[i].temp
             << endl;
       file2 << std::left << setw(12) << Exp_data[i].Time
             << setw(12) << Exp_data[i].Curforce
             << setw(12) << Exp_data[i].Refforce
             << setw(12) <<Exp_data[i].temp
+            << endl;
+      file3 << std::left 
+            << setw(12) << Exp_data[i].hr
+            << setw(12) << Exp_data[i].s
+            << setw(12) << Exp_data[i].dh
+            << setw(12) << Exp_data[i].a_hat
+            << setw(12) << Exp_data[i].b_hat
+            << setw(12) << Exp_data[i].c_hat
+            << setw(12) << Exp_data[i].Refforce
             << endl;
     }
 

@@ -35,6 +35,8 @@
 
 
 void *rscv (void *param);
+double setOrig(rs2::frameset frames, rs2::pipeline pipe);
+double getLine(rs2::frameset frames, rs2::pipeline pipe);
 
 #endif
 

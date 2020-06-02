@@ -52,7 +52,13 @@ typedef struct{
   PATH Path;          // 当前位移命令
 	double Curpos;      // 当前位置
 	double Refpos;      // 目标位置
+  double Curh;
+  double Lasth;
   double temp;        // Shawn: 临时数据
+
+  // Adaptation
+  double hr, s, dh;
+  double a_hat, b_hat, c_hat;
 }SVO;
 
 #endif
