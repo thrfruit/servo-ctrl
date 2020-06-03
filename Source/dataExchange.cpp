@@ -74,8 +74,8 @@ void ExpDataWrite() {
 
   if(file1.is_open() & file2.is_open()) {
     printf("Saving data ...\n");
-    file1 << std::left << setw(12) << "Time" << setw(12) <<"Cur_h"
-          << setw(12) <<"Last_h" 
+    file1 << std::left << setw(12) << "Time_rscv" << setw(12) <<"Cur_h"
+          << setw(12) <<"Refpos" 
           << setw(12) <<"Refforce" 
           << endl;
     file2 << std::left << setw(12) << "Time" << setw(12) <<"Curforce" 
@@ -91,13 +91,13 @@ void ExpDataWrite() {
           << endl;
 
     for(i=0; i<Exp_data_index; i++) {
-      file1 << std::left << setw(12) << Exp_data[i].Time 
+      file1 << std::left << setw(12) << Exp_data[i].temp
             << setw(12) << Exp_data[i].Curh 
-            << setw(12) <<Exp_data[i].Lasth 
+            << setw(12) <<Exp_data[i].Refh
             << setw(12) <<Exp_data[i].Refforce
             << setw(12) <<Exp_data[i].temp
             << endl;
-      file2 << std::left << setw(12) << Exp_data[i].Time
+      file2 << std::left << setw(12) << Exp_data[i].temp
             << setw(12) << Exp_data[i].Curforce
             << setw(12) << Exp_data[i].Refforce
             << setw(12) <<Exp_data[i].temp

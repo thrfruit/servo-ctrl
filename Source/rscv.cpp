@@ -1,22 +1,18 @@
-/***********************************
+/*********************************** 
  * 文件名称：rscv.cpp
  * 功    能:
  * 思    路: 
  * 获取图片 -> 提取轮廓 -> 霍夫变换提取直线
  * -> 计算工具位置 -> 更新状态变量 -> 更新自适应控制参数
  * -> 计算输出信号
+ *  周   期: 约30~40ms
  ***********************************/
 /***********************************
  * TODO:
  * 1. 如果某次没检测到工具, 该怎样处理; 
  *    认为工具静止 / 夹紧以便于检测
+ * 2. 自适应控制系数积分饱和的问题;
  * *********************************/
-
-/* **************************************************
- * Note:
- * 1. y = -20*(1-e^(-2*x)*(1+2*x))
- * 2. Period: 0.03ms
- * **************************************************/
 
 #include "../include/rscv.h"
 #include "../include/common.h"
@@ -44,11 +40,11 @@ void *rscv (void *param) {
    * ufn: 输出压力信号
    */
   double hm, dhm, d2hm;
-  double a_hat, b_hat, c_hat, ks;
-  double aa = 2, ab = 2, ac = 2;
+  double a_hat, b_hat, c_hat, ks=6;
+  double aa = 200, ab = 200, ac = 200;
   double hr, s, dh;
   double time=0, time_last=0;
-  double lambda = 1;
+  double lambda = 2;
   double ufn, exp_t;
 
   rs2::pipeline pipe;          // 声明Realsense管道
@@ -92,7 +88,7 @@ void *rscv (void *param) {
     h_cur     = h_min - h_orig;
     if (time - time_last != 0) {
       // 处理除零错误
-      dh        = (h_cur - h_last) / (time - time_last);
+      dh = (h_cur - h_last) / (time - time_last);
     }
 
     /* **************************************************
@@ -110,8 +106,10 @@ void *rscv (void *param) {
 
 
     // 计算广义误差
-    hr    = d2hm - lambda*dh;
-    s     = (dh - dhm) + lambda*(h_cur - hm);
+    // 这里的符号是因为公式计算的y轴向上为正;
+    // 而相机得到的数据是向下为正
+    hr    = -1*(d2hm - lambda*dh);
+    s     = -1*((dh - dhm) + lambda*(h_cur - hm));
 
     // 更新自适应控制参数
     a_hat += -aa*s*hr;
@@ -119,9 +117,23 @@ void *rscv (void *param) {
     c_hat += -ac*s*gravity;
 
     // 计算输出信号
-    ufn = (double)(a_hat*hr - ks*s + b_hat*dh + c_hat*gravity);
+    // 位置参数单位从m转化为mm;
+    ufn = (a_hat*hr/1000 - ks*s/1000 + b_hat*dh/1000 + c_hat*gravity);
+    // 限制输出阈值
+    if (ufn < -10) {
+      ufn = -10;
+    }
+    else if (ufn > 400) {
+      ufn = 400;
+    }
+
+    if (dh > 200) {
+      ufn = 400;
+    }
 
     /* 同步共享数据 */
+    rscv_svo.temp     = time;
+    rscv_svo.Refh     = hm;
     rscv_svo.Curh     = h_cur;
     rscv_svo.Lasth    = h_last;
     rscv_svo.Refforce = ufn;

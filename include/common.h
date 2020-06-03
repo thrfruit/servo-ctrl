@@ -54,6 +54,7 @@ typedef struct{
 	double Refpos;      // 目标位置
   double Curh;
   double Lasth;
+  double Refh;
   double temp;        // Shawn: 临时数据
 
   // Adaptation
