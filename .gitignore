@@ -1,11 +1,8 @@
 # Shawn
 build/
-CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-Makefile
-servo
-data/
+!/lib/*
 
 # Prerequisites
 *.d
@@ -41,3 +38,4 @@ data/
 *.app
 
 *.ccls
+
