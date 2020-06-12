@@ -3,7 +3,8 @@
 2. 在当前Shell中添加环境变量；
 
 
-1. ln -s /dev/ttyUSB0 /dev/ttyS110
+* `ls -l /dev/tty*`
+1. `ln -s /dev/ttyUSB0 /dev/ttyS110`
 2. gcc test.cpp -I ../include -L ../lib/ -l:MotorMaster.Sdk.so -lpthread -o test
 3. export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
 
