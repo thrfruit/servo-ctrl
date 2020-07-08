@@ -1,9 +1,11 @@
 # Shawn
-build/
+build/*
+build/data/*
 CMakeCache.txt
 cmake_install.cmake
 !/lib/*
 !/build/data
+!/build/plot.py
 
 # Prerequisites
 *.d

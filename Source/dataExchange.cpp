@@ -91,13 +91,14 @@ void ExpDataWrite() {
           << endl;
 
     for(i=0; i<Exp_data_index; i++) {
-      file1 << std::left << setw(12) << Exp_data[i].temp
-            << setw(12) << Exp_data[i].Curh 
-            << setw(12) <<Exp_data[i].Refh
+      file1 << std::left 
+            << setw(12) << Exp_data[i].Time
+            << setw(12) << Exp_data[i].Motion.Curh 
+            << setw(12) <<Exp_data[i].Motion.Refh
             << setw(12) <<Exp_data[i].Refforce
             << setw(12) <<Exp_data[i].temp
             << endl;
-      file2 << std::left << setw(12) << Exp_data[i].temp
+      file2 << std::left << setw(12) << Exp_data[i].Time
             << setw(12) << Exp_data[i].Curforce
             << setw(12) << Exp_data[i].Refforce
             << setw(12) <<Exp_data[i].temp

@@ -63,11 +63,6 @@ int main(void) {
   rm.goHome();
   // rm.setMotion(1000, 3000, 3000);
   rm.setPush(15, 10, 10);
-  rm.setPos(2);
-  sleep(1);
-  pSVO.Refpos = rm.getPos();
-  std::cout << "Curposition" << pSVO.Refpos << std::endl;
-  pSVO.ForceFlag = ON;
 
   // Reset save buffer
   SaveDataReset();    // 初始化待存档数据的队列
@@ -143,7 +138,7 @@ int main(void) {
     /* calculate next shot */
     t.tv_nsec += interval;
 
-    //时间进制，保证时间纳秒加到上限就进位
+    // 时间进制，保证时间纳秒加到上限就进位
     while (t.tv_nsec >= NSEC_PER_SEC) {
       t.tv_nsec -= NSEC_PER_SEC;
       t.tv_sec++;
@@ -274,8 +269,8 @@ void DisplayCurrentInformation(){
   SvoRead(&display_info_svo);
 
   printf("----------------- Current Information -------------------\n");
-  printf("Last position[mm]: %.2f\n", display_info_svo.Lasth);
-  printf("Current position[mm]: %.2f\n", display_info_svo.Curh);
+  printf("Last position[mm]: %.2f\n", display_info_svo.Motion.Lasth);
+  printf("Current position[mm]: %.2f\n", display_info_svo.Motion.Curh);
   printf("Current Force[N]: %.2f\n", display_info_svo.Curforce);
   printf("Current Time[s]: %.2f\n", display_info_svo.Time);
 }

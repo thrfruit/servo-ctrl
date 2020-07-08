@@ -43,7 +43,7 @@ void *rscv (void *param) {
   double a_hat, b_hat, c_hat, ks=6;
   double aa = 200, ab = 200, ac = 200;
   double hr, s, dh;
-  double time=0, time_last=0;
+  double time=0, time_last=0, dt;
   double lambda = 2;
   double ufn, exp_t;
 
@@ -64,11 +64,6 @@ void *rscv (void *param) {
   h_last = 0;
   h_cur  = 0;
 
-  // 等待伺服进程开始
-  pthread_mutex_lock(&mymutex);
-  pthread_cond_wait(&rt_msg_cond, &mymutex);
-  pthread_mutex_unlock(&mymutex);
-
   while(true) {
     h_min = getLine(frames, pipe);
     // 工具只能下落
@@ -81,8 +76,10 @@ void *rscv (void *param) {
      * **************************************************/
     SvoRead(&rscv_svo);
     // 时间信息
-    time_last = time;
     time      = rscv_svo.Time;
+    dt        = time - time_last;
+    time_last = time;
+
     // 位置信息
     h_last    = h_cur;
     h_cur     = h_min - h_orig;
@@ -98,11 +95,10 @@ void *rscv (void *param) {
      *    y'' = 4*(1-2*x)*exp(-2*x)
      * 2. ufn = a_hat*hr - ks*s + b_hat*dh + c_hat*gravity
      * **************************************************/
-    // 计算期望运动状态
-    exp_t = exp(-2*time);
-    hm    = 20*(1- exp_t*(1+2*time));
-    dhm   = 20*4*time*exp_t;
-    d2hm  = 20*4*(1-2*time)*exp_t;
+    // 期望运动状态
+    hm   = rscv_svo.Motion.Refh;
+    dhm  = rscv_svo.Motion.dhm;
+    d2hm = rscv_svo.Motion.d2hm;
 
 
     // 计算广义误差
@@ -112,13 +108,11 @@ void *rscv (void *param) {
     s     = -1*((dh - dhm) + lambda*(h_cur - hm));
 
     // 更新自适应控制参数
-    a_hat += -aa*s*hr;
-    b_hat += -ab*s*dh;
-    c_hat += -ac*s*gravity;
+    a_hat += -aa*s*(hr+gravity)*dt;
 
     // 计算输出信号
     // 位置参数单位从m转化为mm;
-    ufn = (a_hat*hr/1000 - ks*s/1000 + b_hat*dh/1000 + c_hat*gravity);
+    ufn = a_hat*(hr+gravity) - ks*s;
     // 限制输出阈值
     if (ufn < -10) {
       ufn = -10;
@@ -133,9 +127,7 @@ void *rscv (void *param) {
 
     /* 同步共享数据 */
     rscv_svo.temp     = time;
-    rscv_svo.Refh     = hm;
-    rscv_svo.Curh     = h_cur;
-    rscv_svo.Lasth    = h_last;
+    rscv_svo.Motion.Curh     = h_cur;
     rscv_svo.Refforce = ufn;
     rscv_svo.hr       = hr;
     rscv_svo.s        = s;

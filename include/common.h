@@ -39,6 +39,15 @@ typedef struct{
   int Mode;       // 轨迹插补的函数类型
 }PATH;
 
+// 物体运动参数
+typedef struct{
+  double Curh;
+  double Lasth;
+  double Refh;
+  double dhm;
+  double d2hm;
+}MOTION;
+
 // 全局的共享数据结构体
 typedef struct{
   int ServoFlag;      // 伺服启用标志
@@ -52,9 +61,7 @@ typedef struct{
   PATH Path;          // 当前位移命令
 	double Curpos;      // 当前位置
 	double Refpos;      // 目标位置
-  double Curh;
-  double Lasth;
-  double Refh;
+  MOTION Motion;
   double temp;        // Shawn: 临时数据
 
   // Adaptation

@@ -23,6 +23,7 @@ void servo_function(RmDriver *rm) {
   double curtime;
   double robot_pos, cmd_pos;
   double start, end;    // shawn: calculate waste time
+  double exp_t, hm, dhm, d2hm;
 
   /* Get the current status */
   SvoRead(&servo_svo);
@@ -40,21 +41,28 @@ void servo_function(RmDriver *rm) {
   if (servo_svo.ServoFlag == ON) {
 
     if (servo_svo.ForceFlag == ON) {
+      // 计算物体期望运动状态
+      exp_t = std::exp(-2*curtime);
+      hm    = 20*(1- exp_t*(1+2*curtime));
+      dhm   = 20*4*curtime*exp_t;
+      d2hm  = 20*4*(1-2*curtime)*exp_t;
+      servo_svo.Motion.Refh = hm;
+      servo_svo.Motion.dhm  = dhm;
+      servo_svo.Motion.d2hm = d2hm;
+
       // 读取压力值
-      if(cnt%2) {
-        ADSingleV20(0, 0, &adResult);    // 单次采集
-        // ADContinuV20(0, 0, 512, 100000, adBuf);    // 连续采集，一个数据包为512个数据
-        // end = GetCurrentTime();
-        // for(i=0;i<512;i++) {
-        //   adResult += adBuf[i];
-        // }
-        // adResult /= 512.0;
-      }
+      ADSingleV20(0, 0, &adResult);    // 单次采集
+      // ADContinuV20(0, 0, 512, 100000, adBuf);    // 连续采集，一个数据包为512个数据
+      // end = GetCurrentTime();
+      // for(i=0;i<512;i++) {
+      //   adResult += adBuf[i];
+      // }
+      // adResult /= 512.0;
       servo_svo.Curforce = (double)(100/(2.7-adResult)-40);
 
       // PID控制
-      servo_svo.Refpos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
-      cmd_pos = (float)servo_svo.Refpos;
+      cmd_pos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
+      servo_svo.Refpos = cmd_pos;
 
       /* 发起运动指令 */
       if(servo_svo.Curforce > 450) {cmd_pos = 0;}    // 压力预警
@@ -79,12 +87,16 @@ void SetSvo(SVO *data) {
   double time;
   extern double kp, ki, kd;
 
+  data->Refpos = rm_read_current_position(0);
+  std::cout << "Curposition" << data->Refpos << std::endl;
+
   if (data->ForceFlag == ON) {
     PID_Arg_Init(&pid, kp, ki, kd, data->Refpos);    // 重置PID控制器
   }
 
   // 设置伺服标志
   data->ServoFlag = ON;
+  data->ForceFlag = ON;
   
   // 重置时间
   ResetTime();
