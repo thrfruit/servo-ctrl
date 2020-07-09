@@ -1,6 +1,6 @@
 # Shawn
 build/*
-build/data/*
+build/data/data.*
 CMakeCache.txt
 cmake_install.cmake
 !/lib/*
