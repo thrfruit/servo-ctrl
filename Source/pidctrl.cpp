@@ -11,7 +11,7 @@
 
 void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
   pid->kp       = -1*kp;
-  pid->ki       = -1*ki;
+  pid->ki       = 0;
   pid->kd       = -1*kd;
 
   pid->SetPoint = 0;
@@ -29,6 +29,7 @@ void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
 double PID_Ctrl(PID* pid, double curval, double goal){
   int fi, fd;    // 积分, 微分分离标志
   float fp;      // 比例项分段系数
+  float du;
 
   /* 接收输入参数 */
   pid->SetPoint = goal;
@@ -51,24 +52,6 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   else{
     fi = 1;
     fd = 1;
-    // 输出信号达到上限，只计算正积分 (因为PID系数为负)
-    if(pid->u-pid->u_max>0) {
-      if(pid->err > 0) {
-        pid->omn_err += pid->err;
-        // pid->omn_err += (pid->err + pid->err_last)/2;    // 梯形积分
-      }
-    }
-    // 输出信号达到下限，只计算负积分 (因为PID系数为负)
-    else if (pid->u-pid->u_min<0) {
-      if(pid->err < 0) {
-        pid->omn_err += pid->err;
-        // pid->omn_err += (pid->err + pid->err_last)/2;
-      }
-    }
-    else{
-      pid->omn_err += pid->err;
-      // pid->omn_err += (pid->err + pid->err_last)/2;
-    }
   }
   
   /* 微分项*/
@@ -84,7 +67,8 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   }
 
   /* 增量式PID控制 */
-  pid->u += fp*pid->kp*pid->err + fi*pid->ki*pid->omn_err + fd*pid->kd*pid->err_last;
+  du = fp*pid->kp*pid->err + fd*pid->kd*pid->diff_err;
+  pid->u += du;
 
   return pid->u;
 }

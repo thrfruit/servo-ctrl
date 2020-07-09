@@ -60,16 +60,18 @@ void *rscv (void *param) {
 	rs2::pipeline_profile selection = pipe.start(cfg);
 
   // 设置原点
-  h_orig = setOrig(frames, pipe);
+  // 注意正负号的问题：相机获得的数据向下为正
+  // 公式计算中向上为正
+  h_orig = -1/1000*setOrig(frames, pipe);
   h_last = 0;
   h_cur  = 0;
 
   while(true) {
-    h_min = getLine(frames, pipe);
+    h_min = -1/1000*getLine(frames, pipe);
     // 工具只能下落
-    if (h_min - (h_cur+h_orig) < 0) {
-      h_min = h_cur + h_orig;
-    }
+    // if (h_min - (h_cur+h_orig) > 0) {
+    //   h_min = h_cur + h_orig;
+    // }
 
     /* **************************************************
      * 计算工具运动状态
@@ -104,8 +106,8 @@ void *rscv (void *param) {
     // 计算广义误差
     // 这里的符号是因为公式计算的y轴向上为正;
     // 而相机得到的数据是向下为正
-    hr    = -1*(d2hm - lambda*dh);
-    s     = -1*((dh - dhm) + lambda*(h_cur - hm));
+    hr    = d2hm - lambda*dh;
+    s     = (dh - dhm) + lambda*(h_cur - hm);
 
     // 更新自适应控制参数
     a_hat += -aa*s*(hr+gravity)*dt;

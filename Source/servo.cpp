@@ -43,9 +43,9 @@ void servo_function(RmDriver *rm) {
     if (servo_svo.ForceFlag == ON) {
       // 计算物体期望运动状态
       exp_t = std::exp(-2*curtime);
-      hm    = 20*(1- exp_t*(1+2*curtime));
-      dhm   = 20*4*curtime*exp_t;
-      d2hm  = 20*4*(1-2*curtime)*exp_t;
+      hm    = -20*(1- exp_t*(1+2*curtime))/1000;
+      dhm   = -20*4*curtime*exp_t/1000;
+      d2hm  = -20*4*(1-2*curtime)*exp_t/1000;
       servo_svo.Motion.Refh = hm;
       servo_svo.Motion.dhm  = dhm;
       servo_svo.Motion.d2hm = d2hm;
