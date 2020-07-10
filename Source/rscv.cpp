@@ -62,16 +62,17 @@ void *rscv (void *param) {
   // 设置原点
   // 注意正负号的问题：相机获得的数据向下为正
   // 公式计算中向上为正
-  h_orig = -1/1000*setOrig(frames, pipe);
+  h_orig = -1*setOrig(frames, pipe)/1000;
   h_last = 0;
   h_cur  = 0;
 
   while(true) {
-    h_min = -1/1000*getLine(frames, pipe);
+    h_min = -1*getLine(frames, pipe)/1000;
+    // std::cout << "h_min = " << h_min << std::endl;
     // 工具只能下落
-    // if (h_min - (h_cur+h_orig) > 0) {
-    //   h_min = h_cur + h_orig;
-    // }
+    if (h_min - (h_cur+h_orig) > 0) {
+      h_min = h_cur + h_orig;
+    }
 
     /* **************************************************
      * 计算工具运动状态
@@ -113,30 +114,26 @@ void *rscv (void *param) {
     a_hat += -aa*s*(hr+gravity)*dt;
 
     // 计算输出信号
-    // 位置参数单位从m转化为mm;
     ufn = a_hat*(hr+gravity) - ks*s;
-    // 限制输出阈值
-    if (ufn < -10) {
-      ufn = -10;
+    // 超调时让物体立刻停止
+    if (h_cur < hm) {
+      ufn = 50;
     }
-    else if (ufn > 400) {
-      ufn = 400;
-    }
-
-    if (dh > 200) {
-      ufn = 400;
+    // 速度过快时让物体停止
+    if (dh > 10) {
+      ufn = 50;
     }
 
     /* 同步共享数据 */
     rscv_svo.temp     = time;
-    rscv_svo.Motion.Curh     = h_cur;
+    rscv_svo.Motion.Curh= h_cur;
     rscv_svo.Refforce = ufn;
     rscv_svo.hr       = hr;
     rscv_svo.s        = s;
     rscv_svo.dh       = dh;
     rscv_svo.a_hat    = a_hat;
-    rscv_svo.b_hat    = b_hat;
-    rscv_svo.c_hat    = c_hat;
+    // rscv_svo.b_hat    = b_hat;
+    // rscv_svo.c_hat    = c_hat;
     SvoWrite(&rscv_svo);
 
     if(shm_servo_inter.status_control == EXIT_C) {

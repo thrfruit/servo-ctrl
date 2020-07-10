@@ -29,7 +29,7 @@ void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
 double PID_Ctrl(PID* pid, double curval, double goal){
   int fi, fd;    // 积分, 微分分离标志
   float fp;      // 比例项分段系数
-  float du;
+  double du;
 
   /* 接收输入参数 */
   pid->SetPoint = goal;
@@ -39,36 +39,29 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   /* 比例项 */
   pid->err = pid->ActPoint - pid->SetPoint;
 
-
-  /* 积分项 */
-  if(std::abs(pid->err) > 150) {   // 误差过大时停用积分项和微分项
-    fi = 0;
+  /* 微分项 */
+  if(std::abs(pid->err) > 100) {   // 误差过大时停用积分项和微分项
     fd = 0;
   }
-  // else if(std::abs(pid->err) < 10) {    // 在误差允许范围内时保持输出量不变
-  //     // pid->err = 0;
-  //     return pid->u;
-  //   }
   else{
-    fi = 1;
     fd = 1;
   }
-  
-  /* 微分项*/
   pid->diff_err = pid->err - pid->err_last;
   pid->err_last = pid->err;
-
-  /* 比例项 */
-  if (pid->ActPoint > 220) {
-    fp = 0.5;
+  
+  /* 输出信号 */
+  // 输出信号增量
+  du = pid->kp*pid->err + fd*pid->kd*pid->diff_err;
+  // 限制输出范围
+  if(pid->u+du > pid->u_max) {
+    pid->u = pid->u_max;
+  }
+  else if(pid->u+du < pid->u_min) {
+    pid->u = pid->u_min;
   }
   else{
-    fp = 1;
+    pid->u += du;
   }
-
-  /* 增量式PID控制 */
-  du = fp*pid->kp*pid->err + fd*pid->kd*pid->diff_err;
-  pid->u += du;
 
   return pid->u;
 }

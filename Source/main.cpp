@@ -17,7 +17,7 @@ int baudrate = 115200;
 uint8_t axis_id = 0;
 
 // PID控制参数
-double kp = 0.00008;
+double kp = 0.0008;
 double ki = 0.0000;
 double kd = 0.00008;
 /*** 接口常量 ***/
@@ -229,7 +229,6 @@ void *interface_function(void *param) {
       case 'S':
         printf("Start\n");
         // pSVO.ServoFlag = ON;
-        pthread_cond_broadcast(&rt_msg_cond);
         SetSvo(&interface_svo);
         pSVO.ServoFlag = ON;
         break;

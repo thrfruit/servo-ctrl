@@ -48,6 +48,14 @@ for line in contents:
 # ===================
 # hr   s    dh    a_hat   b_hat   c_hat    Refforce    
 hr, s, dh, a_hat = [], [], [], []
+with open(fname_adapt) as f:
+    contents = f.readlines()
+
+del contents[0]
+for line in contents:
+    value = [float(s) for s in line.split()]
+    a_hat.append(value[3])
+
 
 
 # ===================
@@ -67,6 +75,8 @@ axh.plot(time, curh)
 axh.set_title('物体位移曲线')
 
 # --- du
+axdu.plot(time, a_hat)
+axdu.set_title('自适应控制参数变化曲线')
 
 # --- Reff & Curf
 axf.plot(time, reff, '--', label='压力信号')

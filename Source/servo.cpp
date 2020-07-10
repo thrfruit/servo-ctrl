@@ -58,7 +58,7 @@ void servo_function(RmDriver *rm) {
       //   adResult += adBuf[i];
       // }
       // adResult /= 512.0;
-      servo_svo.Curforce = (double)(100/(2.7-adResult)-40);
+      servo_svo.Curforce = (double)(100.0/(2.7-adResult)-40.0);
 
       // PID控制
       cmd_pos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
@@ -88,16 +88,16 @@ void SetSvo(SVO *data) {
   extern double kp, ki, kd;
 
   data->Refpos = rm_read_current_position(0);
-  std::cout << "Curposition" << data->Refpos << std::endl;
-
-  if (data->ForceFlag == ON) {
-    PID_Arg_Init(&pid, kp, ki, kd, data->Refpos);    // 重置PID控制器
-  }
+  std::cout << "Curposition: " << data->Refpos << std::endl;
 
   // 设置伺服标志
   data->ServoFlag = ON;
   data->ForceFlag = ON;
   
+  if (data->ForceFlag == ON) {
+    PID_Arg_Init(&pid, kp, ki, kd, data->Refpos);    // 重置PID控制器
+  }
+
   // 重置时间
   ResetTime();
   time = GetCurrentTime();

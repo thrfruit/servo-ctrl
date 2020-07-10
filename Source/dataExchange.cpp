@@ -94,18 +94,21 @@ void ExpDataWrite() {
           << endl;
 
     for(i=0; i<Exp_data_index; i++) {
+      // Position
       file1 << std::left 
             << setw(len) << Exp_data[i].Time
             << setw(len) << Exp_data[i].Motion.Curh 
             << setw(len) <<Exp_data[i].Motion.Refh
             << setw(len) <<Exp_data[i].temp
             << endl;
+      // Force
       file2 << std::left << setw(len) << Exp_data[i].Time
             << setw(len) << Exp_data[i].Curforce
             << setw(len) << Exp_data[i].Refforce
             << setw(len) << Exp_data[i].Refpos
             << setw(len) << Exp_data[i].temp
             << endl;
+      // Adaptation
       file3 << std::left 
             << setw(len) << Exp_data[i].hr
             << setw(len) << Exp_data[i].s

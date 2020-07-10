@@ -33,7 +33,7 @@
  * to access without faulting */
 #define MAX_SAFE_STACK (8 * 1024)
 /* The number of nsecs between two servo thread */
-#define SERVO_INTERVAL (8000000)
+#define SERVO_INTERVAL (20000000)
 
 /* =================== main.cpp ================== */
 /***********************************
