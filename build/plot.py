@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import matplotlib.pyplot as plt
 import numpy as py
+import time as tm
 
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
 plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
@@ -62,7 +63,7 @@ for line in contents:
 # === Plot
 # ===================
 # === Fig 1
-fig1 = plt.figure(figsize=(16, 24))
+fig1 = plt.figure(figsize=(16, 9))
 # --- Subplot
 axh = fig1.add_subplot(2,2,1)
 axdu = fig1.add_subplot(2,2,2)
@@ -70,8 +71,9 @@ axf = fig1.add_subplot(2,2,3)
 axpos = fig1.add_subplot(2,2,4)
 
 # --- Refh & Curh
-axh.plot(time, refh, '--')
-axh.plot(time, curh)
+axh.plot(time, refh, '--', label='参考位置')
+axh.plot(time, curh, label='实际位置')
+axh.legend()
 axh.set_title('物体位移曲线')
 
 # --- du
@@ -89,5 +91,23 @@ axpos.plot(time, refpos)
 axpos.set_title('夹具位置信号')
 
 
+# ===================
+# === Save Figures
+# ===================
+# --- Give a filename
+fname = tm.strftime('%y%m%d_%H%M',tm.localtime(tm.time()))
+fig = fig1
+
+# --- Display Figures
 plt.show()
+
+# --- Save Figures
+save_flag = input('Save or not (y/n)')
+if save_flag == '':
+    fig.savefig('./pics/'+fname+'.svg')
+elif save_flag in 'nN':
+    pass
+else:
+    fig.savefig('./pics/'+fname+'.svg')
+
 

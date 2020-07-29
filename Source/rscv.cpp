@@ -44,7 +44,7 @@ void *rscv (void *param) {
   double aa = 200, ab = 200, ac = 200;
   double hr, s, dh;
   double time=0, time_last=0, dt;
-  double lambda = 2;
+  double lambda = 10;
   double ufn, exp_t;
 
   rs2::pipeline pipe;          // 声明Realsense管道

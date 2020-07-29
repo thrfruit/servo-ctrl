@@ -15,6 +15,9 @@ PID pid;
 float adBuf[1024];
 float adResult = 0.0;
 int cnt = 0;
+// 二阶临界阻尼系统参数
+float wn = 1;
+float goal = -20;
 
 void servo_function(RmDriver *rm) {
   int ret, i;
@@ -42,22 +45,16 @@ void servo_function(RmDriver *rm) {
 
     if (servo_svo.ForceFlag == ON) {
       // 计算物体期望运动状态
-      exp_t = std::exp(-2*curtime);
-      hm    = -20*(1- exp_t*(1+2*curtime))/1000;
-      dhm   = -20*4*curtime*exp_t/1000;
-      d2hm  = -20*4*(1-2*curtime)*exp_t/1000;
+      exp_t = std::exp(-wn*curtime);
+      hm = goal*(1-exp_t*(1+wn*curtime))/1000;
+      dhm = goal*wn*wn*curtime*exp_t/1000;
+      d2hm = goal*wn*wn*(1-wn*curtime)*exp_t/1000;
       servo_svo.Motion.Refh = hm;
       servo_svo.Motion.dhm  = dhm;
       servo_svo.Motion.d2hm = d2hm;
 
       // 读取压力值
       ADSingleV20(0, 0, &adResult);    // 单次采集
-      // ADContinuV20(0, 0, 512, 100000, adBuf);    // 连续采集，一个数据包为512个数据
-      // end = GetCurrentTime();
-      // for(i=0;i<512;i++) {
-      //   adResult += adBuf[i];
-      // }
-      // adResult /= 512.0;
       servo_svo.Curforce = (double)(100.0/(2.7-adResult)-40.0);
 
       // PID控制
