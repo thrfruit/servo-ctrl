@@ -53,16 +53,16 @@ int main(void) {
   /*** User variables ***/
 
   /*** Initialization ***/
-  // Connect to UsbV20
-  if (-1 == OpenUsbV20()) {
-    printf("...... UsbV20! Open! Failed! ......\n");
-  }
-
   // Connect to RmClawer
   RmDriver rm(port, baudrate, axis_id);
   rm.goHome();
   // rm.setMotion(1000, 3000, 3000);
   rm.setPush(15, 10, 10);
+
+  // Connect to UsbV20
+  if (-1 == OpenUsbV20()) {
+    printf("...... UsbV20! Open! Failed! ......\n");
+  }
 
   // Reset save buffer
   SaveDataReset();    // 初始化待存档数据的队列

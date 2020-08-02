@@ -12,12 +12,13 @@
 #include "../include/pidctrl.h"
 
 PID pid;
-float adBuf[1024];
-float adResult = 0.0;
 int cnt = 0;
 // 二阶临界阻尼系统参数
-float wn = 1;
+float wn = 0.5;
 float goal = -20;
+extern pthread_mutex_t mymutex;       // Shanw互斥锁
+extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
+double force_0;
 
 void servo_function(RmDriver *rm) {
   int ret, i;
@@ -31,7 +32,6 @@ void servo_function(RmDriver *rm) {
   /* Get the current status */
   SvoRead(&servo_svo);
   // Copy the status of Rm
-  // robot_pos = rm.getPos();
   robot_pos = servo_svo.Refpos;
   servo_svo.Curpos = robot_pos;
   // Get current time
@@ -54,12 +54,12 @@ void servo_function(RmDriver *rm) {
       servo_svo.Motion.d2hm = d2hm;
 
       // 读取压力值
-      ADSingleV20(0, 0, &adResult);    // 单次采集
-      servo_svo.Curforce = (double)(100.0/(2.7-adResult)-40.0);
+      servo_svo.Curforce = getForce();
 
       // PID控制
       cmd_pos = PID_Ctrl(&pid, servo_svo.Curforce, servo_svo.Refforce);
       servo_svo.Refpos = cmd_pos;
+      servo_svo.pidfit = pid.fit;
 
       /* 发起运动指令 */
       if(servo_svo.Curforce > 450) {cmd_pos = 0;}    // 压力预警
@@ -80,19 +80,25 @@ void servo_function(RmDriver *rm) {
  * 开始伺服控制。清空命令堆栈，将当前轨迹放入堆栈。
  */
 void SetSvo(SVO *data) {
-  int ret;
   double time;
   extern double kp, ki, kd;
 
+  // 读取当前夹爪位置
   data->Refpos = rm_read_current_position(0);
   std::cout << "Curposition: " << data->Refpos << std::endl;
+
+  // 读取当前压力值
+  data->Refforce = getForce();
+  force_0 = data->Refforce;
+  std::cout << "Refforce = " << data->Refforce << std::endl;
 
   // 设置伺服标志
   data->ServoFlag = ON;
   data->ForceFlag = ON;
   
   if (data->ForceFlag == ON) {
-    PID_Arg_Init(&pid, kp, ki, kd, data->Refpos);    // 重置PID控制器
+    // 重置PID控制器
+    PID_Arg_Init(&pid, kp, ki, kd, data->Refpos);
   }
 
   // 重置时间
@@ -100,6 +106,31 @@ void SetSvo(SVO *data) {
   time = GetCurrentTime();
   SetStartTime(time);
 
-  SvoWrite(data);    // 将数据同步到pSVO
+  // 将数据同步到pSVO
+  SvoWrite(data);
+
+  /* *** 启用所有线程 *** */
+  pthread_mutex_lock(&mymutex);
+  pthread_cond_broadcast(&rt_msg_cond);
+  pthread_mutex_unlock(&mymutex);
+}
+
+
+/*
+ * 使用压力传感器测量压力值
+ */
+double getForce(void) {
+  float adResult, adBuf[1024];
+  double force;
+  // 单次采集
+  ADSingleV20(0, 0, &adResult);
+  // 连续采集，一个数据包为512个数据
+  // ADContinuV20(0, 0, 512, 100000, adBuf);
+  // for(int i=0;i<512;i++) {
+  //   adResult += adBuf[i];
+  // }
+  // adResult /= 512.0;
+  force = (double)(100.0/(2.7-adResult)-40.0);
+  return force;
 }
 

@@ -20,6 +20,7 @@
 extern shm_interface shm_servo_inter;    // 线程结束标志; (main)
 extern pthread_mutex_t mymutex;       // Shanw互斥锁
 extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
+extern double force_0;
 
 void *rscv (void *param) {
   // 复制共享变量
@@ -41,7 +42,7 @@ void *rscv (void *param) {
    */
   double hm, dhm, d2hm;
   double a_hat, b_hat, c_hat, ks=6;
-  double aa = 200, ab = 200, ac = 200;
+  double aa = 2, ab = 200, ac = 200;
   double hr, s, dh;
   double time=0, time_last=0, dt;
   double lambda = 10;
@@ -68,7 +69,6 @@ void *rscv (void *param) {
 
   while(true) {
     h_min = -1*getLine(frames, pipe)/1000;
-    // std::cout << "h_min = " << h_min << std::endl;
     // 工具只能下落
     if (h_min - (h_cur+h_orig) > 0) {
       h_min = h_cur + h_orig;
@@ -90,6 +90,11 @@ void *rscv (void *param) {
       // 处理除零错误
       dh = (h_cur - h_last) / (time - time_last);
     }
+
+    // 物体尚未运动 且 力控效果不理想
+    // if ((h_cur - h_last == 0) & (rscv_svo.pidfit == 0)) {
+    //   continue;
+    // }
 
     /* **************************************************
      * 模型参考自适应控制(MRAS)
@@ -114,15 +119,7 @@ void *rscv (void *param) {
     a_hat += -aa*s*(hr+gravity)*dt;
 
     // 计算输出信号
-    ufn = a_hat*(hr+gravity) - ks*s;
-    // 超调时让物体立刻停止
-    if (h_cur < hm) {
-      ufn = 50;
-    }
-    // 速度过快时让物体停止
-    if (dh > 10) {
-      ufn = 50;
-    }
+    ufn = force_0 + a_hat*(hr+gravity) - ks*s;
 
     /* 同步共享数据 */
     rscv_svo.temp     = time;
@@ -137,7 +134,7 @@ void *rscv (void *param) {
     SvoWrite(&rscv_svo);
 
     if(shm_servo_inter.status_control == EXIT_C) {
-      // cv::imwrite("./pic1.jpg", src);
+      // cv::imwrite, src);
       break;
     }  // if
   }  // while
@@ -172,7 +169,7 @@ double setOrig(rs2::frameset frames, rs2::pipeline pipe) {
     cv::cvtColor(src, img, cv::COLOR_BGR2GRAY);         // 灰度图
     cv::GaussianBlur(img, img, cv::Size(5,5), 0, 0);    // 高斯滤波
     // Canny参数影响轮廓轮廓识别
-    cv::Canny(img, img, 40, 100);
+    cv::Canny(img, img, 40, 80);
 
     // 霍夫变换提取直线
     HoughLinesP(img, tline,1,CV_PI/90,14,6,16);
@@ -250,7 +247,7 @@ double getLine(rs2::frameset frames, rs2::pipeline pipe) {
   cv::cvtColor(src, img, cv::COLOR_BGR2GRAY);         // 灰度图
   cv::GaussianBlur(img, img, cv::Size(5,5), 0, 0);    // 高斯滤波
   // Canny参数影响轮廓轮廓识别
-  cv::Canny(img, img, 40, 100);
+  cv::Canny(img, img, 40, 80);
 
   // 霍夫变换提取直线
   HoughLinesP(img, tline,1,CV_PI/90,14,6,16);

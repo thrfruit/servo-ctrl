@@ -24,6 +24,7 @@ void PID_Arg_Init(PID* pid, double kp, double ki, double kd, double initval){
 
   pid->u_max    = 10;
   pid->u_min    = 2;
+  pid->fit      = 0;
 }
 
 double PID_Ctrl(PID* pid, double curval, double goal){
@@ -61,6 +62,14 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   }
   else{
     pid->u += du;
+  }
+
+  // 力控效果进入合适范围
+  if (pid->err < 5) {
+    pid->fit = 1;
+  }
+  else{
+    pid->fit = 0;
   }
 
   return pid->u;

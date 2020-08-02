@@ -67,6 +67,9 @@ typedef struct{
   // Adaptation
   double hr, s, dh;
   double a_hat, b_hat, c_hat;
+
+  // Pid info
+  int pidfit;
 }SVO;
 
 #endif

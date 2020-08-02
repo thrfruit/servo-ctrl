@@ -86,5 +86,13 @@ void servo_function(RmDriver *rm);
  ***********************************/
 void SetSvo(SVO *data);
 
+/***********************************
+ * 函数名称：getForce
+ * 功    能：使用压力传感器测量当前压力值
+ * 参    数：NULL
+ * 返 回 值：double 当前压力值
+ ***********************************/
+double getForce(void);
+
 #endif
 

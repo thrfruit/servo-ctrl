@@ -23,6 +23,7 @@ typedef struct{
 
   double u_max;       // 输出信号上限
   double u_min;       // 输出信号下限
+  int fit;            // 达到合适的控制效果
 }PID;
 
 /***********************************
