@@ -47,6 +47,8 @@ void *rscv (void *param) {
   double time=0, time_last=0, dt;
   double lambda = 10;
   double ufn, exp_t;
+  double start, end;
+  double ret;
 
   rs2::pipeline pipe;          // 声明Realsense管道
   rs2::frameset frames;        // 创建一个rs2::frameset对象, 包含一组帧和访问他们的接口
@@ -64,11 +66,17 @@ void *rscv (void *param) {
   // 注意正负号的问题：相机获得的数据向下为正
   // 公式计算中向上为正
   h_orig = -1*setOrig(frames, pipe)/1000;
-  h_last = 0;
-  h_cur  = 0;
 
   while(true) {
-    h_min = -1*getLine(frames, pipe)/1000;
+    pthread_mutex_lock(&mymutex);
+    pthread_cond_wait(&rt_msg_cond, &mymutex);
+    pthread_mutex_unlock(&mymutex);
+
+    // 判断是否检测到物体
+    ret = getLine(frames, pipe);
+    if (ret +1 != 0){
+      h_min = -1*ret/1000;
+    }
     // 工具只能下落
     if (h_min - (h_cur+h_orig) > 0) {
       h_min = h_cur + h_orig;
@@ -90,11 +98,6 @@ void *rscv (void *param) {
       // 处理除零错误
       dh = (h_cur - h_last) / (time - time_last);
     }
-
-    // 物体尚未运动 且 力控效果不理想
-    // if ((h_cur - h_last == 0) & (rscv_svo.pidfit == 0)) {
-    //   continue;
-    // }
 
     /* **************************************************
      * 模型参考自适应控制(MRAS)
@@ -133,8 +136,9 @@ void *rscv (void *param) {
     // rscv_svo.c_hat    = c_hat;
     SvoWrite(&rscv_svo);
 
+    /*** 设置退出条件 ***/
     if(shm_servo_inter.status_control == EXIT_C) {
-      // cv::imwrite, src);
+      std::cout << "===== Collect thread end ! ! !" << std::endl;
       break;
     }  // if
   }  // while
@@ -254,6 +258,11 @@ double getLine(rs2::frameset frames, rs2::pipeline pipe) {
 
   // 获取直线信息
   h_min = 99;    h_flag = 0;
+  // 未读取到直线信息
+  if(tline.size() == 0) {
+    return -1;
+  }
+  // 读取到直线信息
   for (size_t i = 0; i < tline.size(); i++) {
     // 计算斜率和高度
     delta_x = tline[i][2] - tline[i][0];

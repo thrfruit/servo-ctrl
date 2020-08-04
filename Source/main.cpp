@@ -47,7 +47,7 @@ int main(void) {
   int interval = SERVO_INTERVAL;  // 一个伺服周期内的纳秒数
 
   /*** User variables ***/
-  pthread_t interface_thread, collect_thread; //创建线程标识符
+  pthread_t interface_thread, rscv_thread; //创建线程标识符
   shm_servo_inter.status_control = INIT_C; 
   int loop_flag = 0;        // 循环标志，在第一次进入伺服线程时使用
   /*** User variables ***/
@@ -58,6 +58,7 @@ int main(void) {
   rm.goHome();
   // rm.setMotion(1000, 3000, 3000);
   rm.setPush(15, 10, 10);
+  pSVO.ForceFlag = 0;
 
   // Connect to UsbV20
   if (-1 == OpenUsbV20()) {
@@ -104,10 +105,10 @@ int main(void) {
     exit(1);
   }
 
-  if (pthread_create(&collect_thread, NULL, rscv, NULL)) {
-    perror("Display_thread create\n");
-    exit(1);
-  }
+  // if (pthread_create(&rscv_thread, NULL, rscv, NULL)) {
+  //   perror("Display_thread create\n");
+  //   exit(1);
+  // }
   /*** Start user's thread ***/
 
   while (1) {
@@ -151,11 +152,16 @@ int main(void) {
   /*** 实验结束，处理实验数据 ***/
 
   /*** 等待子线程结束 ***/
+  // 唤醒等待的条件变量
+  pthread_mutex_lock(&mymutex);
+  pthread_cond_signal(&rt_msg_cond);
+  pthread_mutex_unlock(&mymutex);
+  // 结束线程
   if (pthread_join(interface_thread, NULL)) {    // 等待collect线程结束
     perror("pthread_join at interface_thread\n");
     exit(1);
   }
-  if (pthread_join(collect_thread, NULL)) {     // 等待display线程结束
+  if (pthread_join(rscv_thread, NULL)) {     // 等待display线程结束
     perror("pthread_join at collect_thread\n");
     exit(1);
   }
@@ -248,6 +254,7 @@ void *interface_function(void *param) {
     interface_counter++;
   } while (end);
   // sleep(4);
+  printf("===== Interface thread end ! ! !\n");
   printf("End of Experiment\n");
   return 0;
 }

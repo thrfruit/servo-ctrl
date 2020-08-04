@@ -18,6 +18,7 @@ float wn = 0.5;
 float goal = -20;
 extern pthread_mutex_t mymutex;       // Shanw互斥锁
 extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
+float adResult, adBuf[1024];
 double force_0;
 
 void servo_function(RmDriver *rm) {
@@ -65,6 +66,7 @@ void servo_function(RmDriver *rm) {
       if(servo_svo.Curforce > 450) {cmd_pos = 0;}    // 压力预警
       rm->setPos(cmd_pos);
     }  // if (ForceFlag)
+    cnt++;
 
 
     /* 保存数据到公共数据库 */
@@ -73,7 +75,12 @@ void servo_function(RmDriver *rm) {
     /* 将数据保存到队列，用于存档 */
     ExpDataSave(&servo_svo);
   }  // if (ServoFlag)
-  cnt++;
+  if (cnt == 6) {
+    cnt = 0;
+    pthread_mutex_lock(&mymutex);
+    pthread_cond_signal(&rt_msg_cond);
+    pthread_mutex_unlock(&mymutex);
+  }
 }
 
 /*
@@ -108,11 +115,6 @@ void SetSvo(SVO *data) {
 
   // 将数据同步到pSVO
   SvoWrite(data);
-
-  /* *** 启用所有线程 *** */
-  pthread_mutex_lock(&mymutex);
-  pthread_cond_broadcast(&rt_msg_cond);
-  pthread_mutex_unlock(&mymutex);
 }
 
 
@@ -120,7 +122,6 @@ void SetSvo(SVO *data) {
  * 使用压力传感器测量压力值
  */
 double getForce(void) {
-  float adResult, adBuf[1024];
   double force;
   // 单次采集
   ADSingleV20(0, 0, &adResult);
