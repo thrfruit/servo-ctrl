@@ -3,6 +3,9 @@
 2. 图像处理周期：约50ms。采集图像、计算物体位置、根据自适应控制方程计算期望压力。
 
 
+## 或许有用的命令
+1. **top:** 查看CPU占用率，该占用率是按CPU总使用率来显示的，即4核最高可达400%。
+
 ## 二阶临界阻尼系统
 1. 响应函数
 ```shell
@@ -51,4 +54,13 @@ mutext.unlock();
 1. 一般来说，wait肯定是在某个条件调用的，不是if就是while
 2. 放在while里面，是防止出于waiting的对象被别的原因调用了唤醒方法，但是while里面的条件并没有满足（也可能当时满足了，但是由于别的线程操作后，又不满足了），就需要再次调用wait将其挂起。
 3. 其实还有一点，就是while最好也被同步，这样不会导致错失信号。
+
+### Linux单进程实现多核CPU线程分配
+**参考资料** 
+1. [Linux单进程如何实现多核CPU线程分配](https://zhidao.baidu.com/question/419156063.html)
+2. [linux进程、线程与cpu的亲和性(affinity)](https://www.cnblogs.com/wenqiang/p/6049978.html)
+3. [https://blog.csdn.net/zfjBIT/article/details/105846212](https://blog.csdn.net/zfjBIT/article/details/105846212)
+4. [pthread与std::thread对比用法](https://blog.csdn.net/matrixyy/article/details/50929149)
+
+
 

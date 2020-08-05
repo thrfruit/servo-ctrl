@@ -12,6 +12,7 @@
  * 1. 如果某次没检测到工具, 该怎样处理; 
  *    认为工具静止 / 夹紧以便于检测
  * 2. 自适应控制系数积分饱和的问题;
+ * 3. [共享内存](https://blog.csdn.net/fuchao1/article/details/102790126)
  * *********************************/
 
 #include "../include/rscv.h"
@@ -138,11 +139,10 @@ void *rscv (void *param) {
 
     /*** 设置退出条件 ***/
     if(shm_servo_inter.status_control == EXIT_C) {
-      std::cout << "===== Collect thread end ! ! !" << std::endl;
       break;
     }  // if
   }  // while
-  std::cout << "Exit rscv" << std::endl;
+  std::cout << "===== Collect thread end ! ! !" << std::endl;
   return ((void *)0);
 }  // *rscv
 

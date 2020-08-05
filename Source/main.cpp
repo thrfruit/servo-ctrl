@@ -31,9 +31,11 @@ pthread_mutex_t servo_inter_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern SVO pSVO;               // 各线程共享的全局变量
 pthread_mutex_t mymutex;       // Shanw互斥锁
 pthread_cond_t rt_msg_cond;    // Shawn条件变量
+cpu_set_t mask;
 /*** User's global variables ***/
 
 /* Pre-fault our task */ 
+
 // 申请一块内存并初始化
 void stack_prefault(void) {
   unsigned char dummy[MAX_SAFE_STACK];
@@ -75,6 +77,16 @@ int main(void) {
     exit(EXIT_FAILURE); //失败地退出函数
   }
   shm_addr = (void *)shmat(shmid, 0, 0); // 将共享内存连接到当前进程的地址空间(映射共享内存)
+
+  // 初始化set集，将set置为空
+  CPU_ZERO(&mask);
+  // 将1-4号CPU加入集合(有0号CPU)
+  CPU_SET(5,&mask);
+  // 设置CPU亲和性
+  if(pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) < 0) {
+    fprintf(stderr, "### Error ###/n=== Set servo affinity failed\n");
+  }
+  usleep(1000);
   /*** Initialization ***/
 
   /* Declare ourself as a real time task */
@@ -105,10 +117,10 @@ int main(void) {
     exit(1);
   }
 
-  // if (pthread_create(&rscv_thread, NULL, rscv, NULL)) {
-  //   perror("Display_thread create\n");
-  //   exit(1);
-  // }
+  if (pthread_create(&rscv_thread, NULL, rscv, NULL)) {
+    perror("Display_thread create\n");
+    exit(1);
+  }
   /*** Start user's thread ***/
 
   while (1) {
@@ -156,15 +168,8 @@ int main(void) {
   pthread_mutex_lock(&mymutex);
   pthread_cond_signal(&rt_msg_cond);
   pthread_mutex_unlock(&mymutex);
-  // 结束线程
-  if (pthread_join(interface_thread, NULL)) {    // 等待collect线程结束
-    perror("pthread_join at interface_thread\n");
-    exit(1);
-  }
-  if (pthread_join(rscv_thread, NULL)) {     // 等待display线程结束
-    perror("pthread_join at collect_thread\n");
-    exit(1);
-  }
+  sleep(2);
+  std::cout << "=== end of all" << std::endl;
   /*** 等待子线程结束 ***/
 
   exit(1);    // 退出程序
