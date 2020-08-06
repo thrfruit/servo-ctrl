@@ -159,7 +159,7 @@ int main() {
     }
   }
 
-  sleep(1);
+  sleep(2);
 }
 ```
 使用g++命令编译`g++ -std=c++11 ctest.cpp -lpthread -o ctest`，运行结果如下。
@@ -174,12 +174,23 @@ thread_0: pid=61036,tid=139775635875584,bind cpu[0]
 thread_1: pid=61037,tid=139775627482880,bind cpu[1]
 ```
 
+## 查看线程运行时所在的CPU
+Linux系统提供了查看线程运行在哪个CPU核心上的命令行指令。
+包括但不限与如下几条：
+1. `top -Hp $pid`: top命令可以查看CPU状态，用户界面操作比较复杂。
+2. `taskset -pc $pid`: 获取某线程与CPU核心的亲和性。
+3. `ps -eLF`: 返回结果中的PSR字段即对应了线程所在的CPU序号。
+在程序(如上述`ctest`)运行时，
+可以通过`ps -eLo pid,lwp,args,psr | grep ctest`指令筛选包含`ctest`的命令的对应字段，
+其中psr即为运行时所在的CPU序号。
+
 
 ## 参考资料
 1. [Linux进程、线程与CPU的亲和性](https://www.cnblogs.com/wenqiang/p/6049978.html)
-1. [c++11 thread 线程绑定CPU方法](https://blog.csdn.net/zfjBIT/article/details/105846212)
-1. [pthread与std::thread对比用法](https://blog.csdn.net/matrixyy/article/details/50929149)
 1. [Linux：获取、设置进程（线程）的CPU亲和性](https://blog.csdn.net/test1280/article/details/88206560)
 1. [C++性能榨汁机之CPU亲和性](https://zhuanlan.zhihu.com/p/57470627)
+1. [c++11 thread 线程绑定CPU方法](https://blog.csdn.net/zfjBIT/article/details/105846212)
+1. [pthread与std::thread对比用法](https://blog.csdn.net/matrixyy/article/details/50929149)
 1. [Linux内核初探：进程与线程](https://zhuanlan.zhihu.com/p/93553600)
+1. [Linux:查看线程运行于哪个CPU核心上](https://blog.csdn.net/test1280/article/details/87993669)
 
