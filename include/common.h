@@ -26,18 +26,24 @@
 #define Rad2Deg 180.0/M_PI
 #define Deg2Rad M_PI/180.0
 
+// 线程标志
 struct shm_interface{
   int status_print;    // 打印状态信息标志(未使用)
   int status_control;  // 线程结束标志
 };
 
-// 位移
+// 标志位
 typedef struct{
-  double Orig;
-  double Goal;
-  double Freq;    // 运动频率(1/完成时间)
-  int Mode;       // 轨迹插补的函数类型
-}PATH;
+  int ServoFlag;      // 伺服启用标志
+  int RscvFlag;       // 图像处理线程标志
+  int ForceFlag;      // 力控标志
+}FLAG;
+
+// 时间
+typedef struct{
+  double Curtime;
+  double Rscv_time;
+}TIME;
 
 // 物体运动参数
 typedef struct{
@@ -48,28 +54,33 @@ typedef struct{
   double d2hm;
 }MOTION;
 
-// 全局的共享数据结构体
+// 夹具状态
 typedef struct{
-  int ServoFlag;      // 伺服启用标志
-  int PathFlag;       // 位置伺服标志
-  int ForceFlag;      // 力控标志
-	int NewPathFlag;    // 新位移命令的标志
-	int PathtailFlag;   // 位移队列尾项(被清空)的标志
-  double Refforce;
-  double Curforce;
-	double Time;
-  PATH Path;          // 当前位移命令
-	double Curpos;      // 当前位置
-	double Refpos;      // 目标位置
-  MOTION Motion;
-  double temp;        // Shawn: 临时数据
+	double Curpos;    // 当前位置
+	double Refpos;    // 目标位置
+  double Refforce;  // 期望压力值
+  double Curforce;  // 实际压力值
+}STATE;
 
-  // Adaptation
+// 临时数据
+typedef struct{
+  double temp;
+}TEMP;
+
+// 自适应控制参数
+typedef struct{
   double hr, s, dh;
   double a_hat, b_hat, c_hat;
+}ADAPT;
 
-  // Pid info
-  int pidfit;
+// 全局的共享数据结构体
+typedef struct{
+  MOTION Motion;
+  FLAG   Flag;
+  TIME   Time;
+  STATE  State;
+  TEMP   Temp;
+  ADAPT  Adapt;
 }SVO;
 
 #endif

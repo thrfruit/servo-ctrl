@@ -12,7 +12,6 @@
  * 1. 如果某次没检测到工具, 该怎样处理; 
  *    认为工具静止 / 夹紧以便于检测
  * 2. 自适应控制系数积分饱和的问题;
- * 3. [共享内存](https://blog.csdn.net/fuchao1/article/details/102790126)
  * *********************************/
 
 #include "../include/rscv.h"
@@ -51,30 +50,31 @@ void *rscv (void *param) {
   double start, end;
   double ret;
 
-  rs2::pipeline pipe;          // 声明Realsense管道
-  rs2::frameset frames;        // 创建一个rs2::frameset对象, 包含一组帧和访问他们的接口
-  rs2::colorizer color_map;    // 声明彩色图
- 
-  //Create a configuration for configuring the pipeline with a non default profile
-  // 配置数据流信息
-	rs2::config cfg;
-	cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
-
+  // 声明Realsense管道
+  rs2::pipeline pipe;
+  // 创建一个rs2::frameset对象, 包含一组帧和访问他们的接口
+  rs2::frameset frames;
+  // 声明彩色图
+  rs2::colorizer color_map;
+  // 配置管道的数据流信息
+  rs2::config cfg;
+  cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
   // 启动设备的管道配置文件, 开始传送数据流
-	rs2::pipeline_profile selection = pipe.start(cfg);
+  rs2::pipeline_profile selection = pipe.start(cfg);
 
   // 设置原点
-  // 注意正负号的问题：相机获得的数据向下为正
-  // 公式计算中向上为正
+  // 注意正负号的问题：相机获得的数据向下为正,公式计算中向上为正
   h_orig = -1*setOrig(frames, pipe)/1000;
 
   while(true) {
+    /* *** 线程同步 *** */
     pthread_mutex_lock(&mymutex);
     pthread_cond_wait(&rt_msg_cond, &mymutex);
     pthread_mutex_unlock(&mymutex);
 
-    // 判断是否检测到物体
+    // 检测物体上边缘
     ret = getLine(frames, pipe);
+    // 判断是否检测到物体
     if (ret +1 != 0){
       h_min = -1*ret/1000;
     }
@@ -88,34 +88,27 @@ void *rscv (void *param) {
      * **************************************************/
     SvoRead(&rscv_svo);
     // 时间信息
-    time      = rscv_svo.Time;
+    time      = rscv_svo.Time.Curtime;
     dt        = time - time_last;
     time_last = time;
 
-    // 位置信息
+    // 运动状态更新
     h_last    = h_cur;
     h_cur     = h_min - h_orig;
-    if (time - time_last != 0) {
-      // 处理除零错误
-      dh = (h_cur - h_last) / (time - time_last);
+    // 处理除零错误
+    if (dt != 0) {
+      dh = (h_cur - h_last) / dt;
     }
 
     /* **************************************************
      * 模型参考自适应控制(MRAS)
-     * 1. y   = 1-exp(-2*x)*(1+2*x)
-     *    y'  = 4*x*exp(-2*x)
-     *    y'' = 4*(1-2*x)*exp(-2*x)
-     * 2. ufn = a_hat*hr - ks*s + b_hat*dh + c_hat*gravity
      * **************************************************/
     // 期望运动状态
     hm   = rscv_svo.Motion.Refh;
     dhm  = rscv_svo.Motion.dhm;
     d2hm = rscv_svo.Motion.d2hm;
 
-
-    // 计算广义误差
-    // 这里的符号是因为公式计算的y轴向上为正;
-    // 而相机得到的数据是向下为正
+    // 计算广义误差(注意正负号的问题)
     hr    = d2hm - lambda*dh;
     s     = (dh - dhm) + lambda*(h_cur - hm);
 
@@ -125,16 +118,14 @@ void *rscv (void *param) {
     // 计算输出信号
     ufn = force_0 + a_hat*(hr+gravity) - ks*s;
 
-    /* 同步共享数据 */
-    rscv_svo.temp     = time;
-    rscv_svo.Motion.Curh= h_cur;
-    rscv_svo.Refforce = ufn;
-    rscv_svo.hr       = hr;
-    rscv_svo.s        = s;
-    rscv_svo.dh       = dh;
-    rscv_svo.a_hat    = a_hat;
-    // rscv_svo.b_hat    = b_hat;
-    // rscv_svo.c_hat    = c_hat;
+    /* *** 同步共享数据 *** */
+    rscv_svo.Time.Rscv_time = time;
+    rscv_svo.Motion.Curh    = h_cur;
+    rscv_svo.State.Refforce = ufn;
+    rscv_svo.Adapt.hr       = hr;
+    rscv_svo.Adapt.s        = s;
+    rscv_svo.Adapt.dh       = dh;
+    rscv_svo.Adapt.a_hat    = a_hat;
     SvoWrite(&rscv_svo);
 
     /*** 设置退出条件 ***/

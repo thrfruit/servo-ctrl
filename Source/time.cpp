@@ -38,6 +38,6 @@ double GetOffsetTime(void) {
 
 void SetStartTime(double time) {
   StartTime = time;
-  printf("Set start time, t=%f\n", time);
+  // printf("Set start time, t=%f\n", time);
 }
 

@@ -27,21 +27,6 @@ void SvoRead(SVO *data) {
   pthread_mutex_unlock(&servoMutex);
 }
 
-/*
- * 从键盘读取运动参数到当前线程
- */
-void ChangePosData(PATH *Path) {
-  printf("Path frequency [1/s] = \n");
-  scanf("%lf", &Path->Freq);
-
-  printf("Path mode: Sin(0) 1JI(1)\n");
-  printf("Path mode = \n");
-  scanf("%d", &Path->Mode);
-
-  printf("Position of claw (mm) = \n");
-  scanf("%lf", &Path->Goal);
-}
-
 
 /* ============== 文件处理 ================ */
 using namespace std;
@@ -97,28 +82,27 @@ void ExpDataWrite() {
     for(i=0; i<Exp_data_index; i++) {
       // Position
       file1 << std::left 
-            << setw(len) << Exp_data[i].Time
+            << setw(len) << Exp_data[i].Time.Curtime
             << setw(len) << Exp_data[i].Motion.Curh 
             << setw(len) <<Exp_data[i].Motion.Refh
-            << setw(len) <<Exp_data[i].temp
             << endl;
       // Force
       file2 << std::left
-            << setw(len) << Exp_data[i].Time
-            << setw(len) << Exp_data[i].Curforce
-            << setw(len) << Exp_data[i].Refforce
-            << setw(len) << Exp_data[i].Refpos
-            << setw(len) << Exp_data[i].temp
+            << setw(len) << Exp_data[i].Time.Curtime
+            << setw(len) << Exp_data[i].State.Curforce
+            << setw(len) << Exp_data[i].State.Refforce
+            << setw(len) << Exp_data[i].State.Refpos
+            << setw(len) << Exp_data[i].Time.Rscv_time
             << endl;
       // Adaptation
       file3 << std::left 
-            << setw(len) << Exp_data[i].hr
-            << setw(len) << Exp_data[i].s
-            << setw(len) << Exp_data[i].dh
-            << setw(len) << Exp_data[i].a_hat
-            << setw(len) << Exp_data[i].b_hat
-            << setw(len) << Exp_data[i].c_hat
-            << setw(len) << Exp_data[i].Refforce
+            << setw(len) << Exp_data[i].Adapt.hr
+            << setw(len) << Exp_data[i].Adapt.s
+            << setw(len) << Exp_data[i].Adapt.dh
+            << setw(len) << Exp_data[i].Adapt.a_hat
+            << setw(len) << Exp_data[i].Adapt.b_hat
+            << setw(len) << Exp_data[i].Adapt.c_hat
+            << setw(len) << Exp_data[i].State.Refforce
             << endl;
     }
 

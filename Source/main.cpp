@@ -60,7 +60,7 @@ int main(void) {
   rm.goHome();
   // rm.setMotion(1000, 3000, 3000);
   rm.setPush(15, 10, 10);
-  pSVO.ForceFlag = 0;
+  pSVO.Flag.ForceFlag = 0;
 
   // Connect to UsbV20
   if (-1 == OpenUsbV20()) {
@@ -186,7 +186,7 @@ void *collect_function(void *param) {
     time = GetCurrentTime();
     SvoRead(&display_svo); // Read data
 
-    display_svo.Refforce = 150 + 50*sin(0.5*time);
+    display_svo.State.Refforce = 150 + 50*sin(0.5*time);
 
     SvoWrite(&display_svo);
     usleep(25000);         // 采集间隔
@@ -222,18 +222,8 @@ void *interface_function(void *param) {
       case 'f':
       case 'F':
         printf("Force:\n");
-        scanf("%lf", &interface_svo.Refforce);
-        interface_svo.ForceFlag = ON;
-        interface_svo.PathFlag = OFF;
-        SvoWrite(&interface_svo);
-        break;
-      case 'p':
-      case 'P':
-        printf("----------------- Now you are in SvoMode -----------------\n");
-        printf("Set the goal position:\n");
-        ChangePosData(&interface_svo.Path);
-        interface_svo.ForceFlag = OFF;
-        interface_svo.PathFlag = ON;
+        scanf("%lf", &interface_svo.State.Refforce);
+        interface_svo.Flag.ForceFlag = ON;
         SvoWrite(&interface_svo);
         break;
       case 's':
@@ -241,7 +231,7 @@ void *interface_function(void *param) {
         printf("Start\n");
         // pSVO.ServoFlag = ON;
         SetSvo(&interface_svo);
-        pSVO.ServoFlag = ON;
+        pSVO.Flag.ServoFlag = ON;
         break;
       case 'i':
       case 'I':
@@ -282,7 +272,7 @@ void DisplayCurrentInformation(){
   printf("----------------- Current Information -------------------\n");
   printf("Last position[mm]: %.2f\n", display_info_svo.Motion.Lasth);
   printf("Current position[mm]: %.2f\n", display_info_svo.Motion.Curh);
-  printf("Current Force[N]: %.2f\n", display_info_svo.Curforce);
-  printf("Current Time[s]: %.2f\n", display_info_svo.Time);
+  printf("Current Force[N]: %.2f\n", display_info_svo.State.Curforce);
+  printf("Current Time[s]: %.2f\n", display_info_svo.Time.Curtime);
 }
 
