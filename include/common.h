@@ -67,12 +67,6 @@ typedef struct{
   double temp;
 }TEMP;
 
-// 自适应控制参数
-typedef struct{
-  double hr, s, dh;
-  double a_hat, b_hat, c_hat;
-}ADAPT;
-
 // 全局的共享数据结构体
 typedef struct{
   MOTION Motion;
@@ -80,7 +74,6 @@ typedef struct{
   TIME   Time;
   STATE  State;
   TEMP   Temp;
-  ADAPT  Adapt;
 }SVO;
 
 #endif

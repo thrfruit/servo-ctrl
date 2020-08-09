@@ -69,6 +69,7 @@ int main(void) {
 
   // Reset save buffer
   SaveDataReset();    // 初始化待存档数据的队列
+  ServoSaveDataReset();
 
   // 创建共享内存
   shmid = shmget((key_t)1234, 72, 0666 | IPC_CREAT);
@@ -161,6 +162,8 @@ int main(void) {
   /*** 实验结束，处理实验数据 ***/
   rm.close();         // 断开夹爪
   ExpDataWrite();     // 保持实验存数据 (Exp_data[i])
+  ServoDataWrite();
+  std::cout << "=== Servo: data saved." << std::endl;
   /*** 实验结束，处理实验数据 ***/
 
   /*** 等待子线程结束 ***/
@@ -168,7 +171,16 @@ int main(void) {
   pthread_mutex_lock(&mymutex);
   pthread_cond_signal(&rt_msg_cond);
   pthread_mutex_unlock(&mymutex);
-  sleep(2);
+  // 等待rscv线程结束
+  if (pthread_join(rscv_thread, NULL)) {
+    perror("pthread_join at collect_thread\n");
+    exit(1);
+  }
+  // 等待interface线程结束
+  if (pthread_join(interface_thread, NULL)) {
+    perror("pthread_join at interface_thread\n");
+    exit(1);
+  }
   std::cout << "=== end of all" << std::endl;
   /*** 等待子线程结束 ***/
 

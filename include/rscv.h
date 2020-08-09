@@ -33,10 +33,20 @@
 #define px2mm  0.153846
 #define gravity 9.8
 
+typedef struct {
+  double a_hat;
+  double s, dh, hr;
+  double curh;
+  double ufn;
+  double time;
+}RSCV;
 
 void *rscv (void *param);
 double setOrig(rs2::frameset frames, rs2::pipeline pipe);
 double getLine(rs2::frameset frames, rs2::pipeline pipe);
+void RscvSaveDataReset();
+void RscvDataSave(RSCV *data);
+void RscvDataWrite();
 
 #endif
 

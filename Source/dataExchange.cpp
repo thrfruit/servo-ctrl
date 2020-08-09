@@ -9,6 +9,7 @@
 
 #include "../include/common.h"
 #include "../include/dataexchange.h"
+#include "../include/servo.h"
 
 /* ============== 线程之间的数据传递 ================ */
 // Shared variable
@@ -29,12 +30,13 @@ void SvoRead(SVO *data) {
 
 
 /* ============== 文件处理 ================ */
-using namespace std;
-
 // for saving the data
 int Exp_data_index = 0;
+int Servo_data_index = 0;
+int Rscv_data_index = 0;
 SVO Exp_data[EXP_DATA_LENGTH];
-
+SERVO Servo_data[EXP_DATA_LENGTH];
+RSCV Rscv_data[EXP_DATA_LENGTH];
 
 void ExpDataSave(SVO *data) {
   if(Exp_data_index < EXP_DATA_LENGTH) {
@@ -47,71 +49,114 @@ void SaveDataReset() {
   Exp_data_index = 0;
 }
 
-
 void ExpDataWrite() {
   int i, len=16;
-  ofstream file1, file2, file3;
+  std::ofstream file1, file2, file3;
 
   // 此处路径从运行路径填起
   file1.open("./data/data.position");
-  file2.open("./data/data.force");
-  file3.open("./data/data.adaptation");
 
-  if(file1.is_open() & file2.is_open()) {
-    printf("Saving data ...\n");
-    file1 << std::left << setw(len) << "Time"
-          << setw(len) <<"Cur_h"
-          << setw(len) <<"Ref_h"
-          << endl;
-    file2 << std::left << setw(len) << "Time"
-          << setw(len) <<"Curforce" 
-          << setw(len) <<"Refforce"
-          << setw(len) <<"Ref_pos"
-          << setw(len) <<"Time_rscv"
-          << endl;
-    file3 << std::left 
-          << setw(len) << "hr"
-          << setw(len) << "s"
-          << setw(len) << "dh"
-          << setw(len) << "a_hat"
-          << setw(len) << "b_hat"
-          << setw(len) << "c_hat"
-          << setw(len) << "Refforce"
-          << endl;
-
+  if(file1.is_open()) {
+    file1 << std::left << std::setw(len) << "Time"
+          << std::setw(len) <<"Cur_h"
+          << std::setw(len) <<"Ref_h"
+          << std::endl;
     for(i=0; i<Exp_data_index; i++) {
-      // Position
       file1 << std::left 
-            << setw(len) << Exp_data[i].Time.Curtime
-            << setw(len) << Exp_data[i].Motion.Curh 
-            << setw(len) <<Exp_data[i].Motion.Refh
-            << endl;
-      // Force
-      file2 << std::left
-            << setw(len) << Exp_data[i].Time.Curtime
-            << setw(len) << Exp_data[i].State.Curforce
-            << setw(len) << Exp_data[i].State.Refforce
-            << setw(len) << Exp_data[i].State.Refpos
-            << setw(len) << Exp_data[i].Time.Rscv_time
-            << endl;
-      // Adaptation
-      file3 << std::left 
-            << setw(len) << Exp_data[i].Adapt.hr
-            << setw(len) << Exp_data[i].Adapt.s
-            << setw(len) << Exp_data[i].Adapt.dh
-            << setw(len) << Exp_data[i].Adapt.a_hat
-            << setw(len) << Exp_data[i].Adapt.b_hat
-            << setw(len) << Exp_data[i].Adapt.c_hat
-            << setw(len) << Exp_data[i].State.Refforce
-            << endl;
+            << std::setw(len) << Exp_data[i].Time.Curtime
+            << std::setw(len) << Exp_data[i].Motion.Curh 
+            << std::setw(len) << Exp_data[i].Motion.Refh
+            << std::endl;
     }
-
     file1.close();
-    file2.close();
-    printf("Data saved.\n");
   } 
   else {
     printf("open file failed\n");
+  }
+}
+
+void ServoSaveDataReset() {
+  Servo_data_index = 0;
+}
+
+void ServoDataSave(SERVO *data) {
+  if(Servo_data_index < EXP_DATA_LENGTH) {
+    Servo_data[Servo_data_index] = *data;
+    Servo_data_index++;
+  }
+}
+
+void ServoDataWrite() {
+  int i, len=16;
+  std::ofstream file_servo;
+
+  // 此处路径从运行路径填起
+  file_servo.open("./data/data.force");
+
+  if(file_servo.is_open()) {
+    file_servo << std::left
+      << std::setw(len) << "Time"
+      << std::setw(len) << "refforce"
+      << std::setw(len) << "curforce"
+      << std::setw(len) << "cmd_pos"
+      << std::endl;
+    for(i=0; i<Servo_data_index; i++) {
+      file_servo << std::left 
+        << std::setw(len) << Servo_data[i].time
+        << std::setw(len) << Servo_data[i].refforce
+        << std::setw(len) << Servo_data[i].curforce
+        << std::setw(len) << Servo_data[i].curpos
+        << std::endl;
+    }
+    file_servo.close();
+  }
+  else {
+    std::cout << "open file failed" << std::endl;
+  }
+}
+
+void RscvSaveDataReset() {
+  Rscv_data_index = 0;
+}
+
+void RscvDataSave(RSCV *data) {
+  if(Rscv_data_index < EXP_DATA_LENGTH) {
+    Rscv_data[Rscv_data_index] = *data;
+    Rscv_data_index++;
+  }
+}
+
+void RscvDataWrite() {
+  int i, len=16;
+  std::ofstream file_rscv;
+
+  // 此处路径从运行路径填起
+  file_rscv.open("./data/data.adaptation");
+
+  if(file_rscv.is_open()) {
+    file_rscv << std::left
+      << std::setw(len) << "Time_rscv"
+      << std::setw(len) << "s"
+      << std::setw(len) << "dh"
+      << std::setw(len) << "hr"
+      << std::setw(len) << "a_hat"
+      << std::setw(len) << "ufn"
+      << std::endl;
+    for(i=0; i<Rscv_data_index; i++) {
+      file_rscv << std::left 
+        << std::setw(len) << Rscv_data[i].time
+        << std::setw(len) << Rscv_data[i].s
+        << std::setw(len) << Rscv_data[i].dh
+        << std::setw(len) << Rscv_data[i].hr
+        << std::setw(len) << Rscv_data[i].a_hat
+        << std::setw(len) << Rscv_data[i].ufn
+        << std::setw(len) << Rscv_data[i].curh
+        << std::endl;
+    }
+    file_rscv.close();
+  }
+  else {
+    std::cout << "! ! ! Rscv: open file failed" << std::endl;
   }
 }
 

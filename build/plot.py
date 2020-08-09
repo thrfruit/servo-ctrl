@@ -27,13 +27,10 @@ for line in contents:
     curh.append(value[1])
     refh.append(value[2])
 
-#  plt.plot(time, curh)
-#  plt.show()
-
 # ===================
 # === Force
 # ===================
-# Time    Curforce    Refforce Refpos
+# Time    Refforce    Curforce   Refpos
 time, curf, reff, refpos = [], [], [], []
 with open(fname_force) as f:
     contents = f.readlines()
@@ -42,21 +39,22 @@ del contents[0]
 for line in contents:
     value = [float(s) for s in line.split()]
     time.append(value[0])
-    curf.append(value[1])
-    reff.append(value[2])
+    reff.append(value[1])
+    curf.append(value[2])
     refpos.append(value[3])
 
 # ===================
 # === Adaptation
 # ===================
 # hr   s    dh    a_hat   b_hat   c_hat    Refforce    
-hr, s, dh, a_hat = [], [], [], []
+time_rscv, hr, s, dh, a_hat = [], [], [], [], []
 with open(fname_adapt) as f:
     contents = f.readlines()
 
 del contents[0]
 for line in contents:
     value = [float(s) for s in line.split()]
+    time_rscv.append(value[0])
     a_hat.append(value[3])
 
 
@@ -79,7 +77,7 @@ axh.legend()
 axh.set_title('物体位移曲线')
 
 # --- du
-axdu.plot(time, a_hat)
+axdu.plot(time_rscv, a_hat)
 axdu.set_title('自适应控制参数变化曲线')
 
 # --- Reff & Curf

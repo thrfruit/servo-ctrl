@@ -22,16 +22,12 @@ extern pthread_mutex_t mymutex;       // Shanw互斥锁
 extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
 extern double force_0;
 
+SVO rscv_svo;
+RSCV Rscv;
+
 void *rscv (void *param) {
-  // 复制共享变量
-  SVO rscv_svo;
-
-  // 声明OpenCV图片矩阵
-  cv::Mat src, cny, img;
-
   // 储存直线信息
-  double h_cur = 0, h_last = 0, h_orig;
-  double h_min;
+  double h_cur = 0, h_last = 0, h_orig, h_min;
 
   /* *** 参考模型的状态参数 *** */
   /* s: 跟踪误差(广义误差);    ks: 跟踪误差系数;
@@ -62,6 +58,8 @@ void *rscv (void *param) {
   // 启动设备的管道配置文件, 开始传送数据流
   rs2::pipeline_profile selection = pipe.start(cfg);
 
+  RscvSaveDataReset();
+
   // 设置原点
   // 注意正负号的问题：相机获得的数据向下为正,公式计算中向上为正
   h_orig = -1*setOrig(frames, pipe)/1000;
@@ -72,6 +70,17 @@ void *rscv (void *param) {
     pthread_cond_wait(&rt_msg_cond, &mymutex);
     pthread_mutex_unlock(&mymutex);
 
+    /* *** Get the current status *** */
+    SvoRead(&rscv_svo);
+    time = rscv_svo.Time.Curtime;
+    // 期望运动状态
+    hm   = rscv_svo.Motion.Refh;
+    dhm  = rscv_svo.Motion.dhm;
+    d2hm = rscv_svo.Motion.d2hm;
+
+    /* **************************************************
+     * 计算工具运动状态
+     * **************************************************/
     // 检测物体上边缘
     ret = getLine(frames, pipe);
     // 判断是否检测到物体
@@ -83,18 +92,13 @@ void *rscv (void *param) {
       h_min = h_cur + h_orig;
     }
 
-    /* **************************************************
-     * 计算工具运动状态
-     * **************************************************/
-    SvoRead(&rscv_svo);
-    // 时间信息
-    time      = rscv_svo.Time.Curtime;
+    // 更新时间信息
     dt        = time - time_last;
     time_last = time;
 
     // 运动状态更新
-    h_last    = h_cur;
-    h_cur     = h_min - h_orig;
+    h_last = h_cur;
+    h_cur  = h_min - h_orig;
     // 处理除零错误
     if (dt != 0) {
       dh = (h_cur - h_last) / dt;
@@ -103,37 +107,35 @@ void *rscv (void *param) {
     /* **************************************************
      * 模型参考自适应控制(MRAS)
      * **************************************************/
-    // 期望运动状态
-    hm   = rscv_svo.Motion.Refh;
-    dhm  = rscv_svo.Motion.dhm;
-    d2hm = rscv_svo.Motion.d2hm;
-
     // 计算广义误差(注意正负号的问题)
-    hr    = d2hm - lambda*dh;
-    s     = (dh - dhm) + lambda*(h_cur - hm);
-
+    hr     = d2hm - lambda*dh;
+    s      = (dh - dhm) + lambda*(h_cur - hm);
     // 更新自适应控制参数
     a_hat += -aa*s*(hr+gravity)*dt;
-
     // 计算输出信号
-    ufn = force_0 + a_hat*(hr+gravity) - ks*s;
+    ufn    = force_0 + a_hat*(hr+gravity) - ks*s;
 
     /* *** 同步共享数据 *** */
     rscv_svo.Time.Rscv_time = time;
-    rscv_svo.Motion.Curh    = h_cur;
     rscv_svo.State.Refforce = ufn;
-    rscv_svo.Adapt.hr       = hr;
-    rscv_svo.Adapt.s        = s;
-    rscv_svo.Adapt.dh       = dh;
-    rscv_svo.Adapt.a_hat    = a_hat;
+    rscv_svo.Motion.Curh    = h_cur;
+    Rscv.time  = time;
+    Rscv.curh  = h_cur;
+    Rscv.hr    = hr;
+    Rscv.s     = s;
+    Rscv.dh    = dh;
+    Rscv.a_hat = a_hat;
+    Rscv.ufn   = ufn;
     SvoWrite(&rscv_svo);
+    RscvDataSave(&Rscv);
 
     /*** 设置退出条件 ***/
     if(shm_servo_inter.status_control == EXIT_C) {
       break;
     }  // if
   }  // while
-  std::cout << "===== Collect thread end ! ! !" << std::endl;
+  RscvDataWrite();
+  std::cout << "=== Rscv: data saved." << std::endl;
   return ((void *)0);
 }  // *rscv
 

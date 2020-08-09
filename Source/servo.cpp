@@ -15,24 +15,27 @@ int cnt = 0;
 // 二阶临界阻尼系统参数
 float wn = 0.5;
 float goal = -20;
+double force_0;
 extern pthread_mutex_t mymutex;       // Shanw互斥锁
 extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
 float adResult, adBuf[1024];
-double force_0;
+SVO servo_svo;
+SERVO Servo;
 
 void servo_function(RmDriver *rm) {
-  SVO servo_svo;
   double curtime;
-  double robot_pos, cmd_pos;
+  double curpos, cmd_pos;
   double exp_t, hm, dhm, d2hm;
+  double curfn, ufn;
 
   /* *** Get the current status *** */
   SvoRead(&servo_svo);
   // Copy the status of Rm
-  servo_svo.State.Curpos = servo_svo.State.Refpos;
+  Servo.curpos = Servo.refpos;
   // Get current time
   curtime = GetCurrentTime();
-  servo_svo.Time.Curtime = curtime;
+  // Get the force sign
+  ufn = servo_svo.State.Refforce;
 
   /* *** Do servo control *** */
   if (servo_svo.Flag.ServoFlag == ON) {
@@ -41,32 +44,37 @@ void servo_function(RmDriver *rm) {
     hm = goal*(1-exp_t*(1+wn*curtime))/1000;
     dhm = goal*wn*wn*curtime*exp_t/1000;
     d2hm = goal*wn*wn*(1-wn*curtime)*exp_t/1000;
-    servo_svo.Motion.Refh = hm;
-    servo_svo.Motion.dhm  = dhm;
-    servo_svo.Motion.d2hm = d2hm;
 
     // 读取压力值
-    servo_svo.State.Curforce = getForce();
-
+    curfn = getForce();
     // PID控制
-    cmd_pos = PID_Ctrl(&pid, servo_svo.State.Curforce,
-        servo_svo.State.Refforce);
-    servo_svo.State.Refpos = cmd_pos;
-
+    cmd_pos = PID_Ctrl(&pid, curfn, ufn);
     // 压力预警
-    if(servo_svo.State.Curforce > 450) {cmd_pos = 0;}
+    if(curfn > 450) {cmd_pos = 0;}
+
     // 发起运动指令
     rm->setPos(cmd_pos);
+  }  // if (ServoFlag)
 
-    /* *** 数据的更新与记录 *** */
+  /* *** Update and Save Data *** */
+  if (servo_svo.Flag.ServoFlag == ON) {
+    servo_svo.Time.Curtime = curtime;
+    servo_svo.Motion.Refh  = hm;
+    servo_svo.Motion.dhm   = dhm;
+    servo_svo.Motion.d2hm  = d2hm;
+    Servo.time     = servo_svo.Time.Curtime;
+    Servo.curforce = curfn;
+    Servo.refforce = ufn;
+    Servo.refpos   = cmd_pos;
     // 更新共享数据
     SvoWrite(&servo_svo);
     // 将数据保存到队列，用于存档
+    ServoDataSave(&Servo);
     ExpDataSave(&servo_svo);
 
     // 累加伺服计数器
     cnt++;
-  }  // if (ServoFlag)
+  }  // if (DataUpdate)
 
   /* *** 线程同步 *** */
   // 每过6个伺服周期唤醒一次图像处理周期
@@ -83,29 +91,33 @@ void servo_function(RmDriver *rm) {
  */
 void SetSvo(SVO *data) {
   double time;
+  double refpos;
+  double ufn;
   extern double kp, ki, kd;
 
   // 读取当前夹爪位置
-  data->State.Refpos = rm_read_current_position(0);
-  std::cout << "Curposition: " << data->State.Refpos << std::endl;
+  refpos = rm_read_current_position(0);
+  std::cout << "Curposition: " << refpos << std::endl;
 
   // 读取当前压力值
-  data->State.Refforce = getForce();
-  force_0 = data->State.Refforce;
-  std::cout << "Refforce = " << data->State.Refforce << std::endl;
+  ufn = getForce();
+  std::cout << "Refforce = " << ufn << std::endl;
 
   // 设置伺服标志
   data->Flag.ServoFlag = ON;
   
   // 重置PID控制器
-  PID_Arg_Init(&pid, kp, ki, kd, data->State.Refpos);
+  PID_Arg_Init(&pid, kp, ki, kd, refpos);
   
   // 重置时间
   ResetTime();
   time = GetCurrentTime();
   SetStartTime(time);
 
-  // 将数据同步到pSVO
+  // 同步数据
+  Servo.refpos = refpos;
+  data->State.Refforce = ufn;
+  force_0 = ufn;
   SvoWrite(data);
 }
 

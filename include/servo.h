@@ -35,6 +35,14 @@
 /* The number of nsecs between two servo thread */
 #define SERVO_INTERVAL (10000000)
 
+typedef struct {
+  double curpos;    // 夹具实际位置
+  double refpos;    // 夹具期望位置
+  double curforce;  // 实际压力值
+  double refforce;  // 期望压力值
+  double time;      // 时间
+}SERVO;
+
 /* =================== main.cpp ================== */
 /***********************************
  * 函数名称：collect_function
@@ -93,6 +101,13 @@ void SetSvo(SVO *data);
  * 返 回 值：double 当前压力值
  ***********************************/
 double getForce(void);
+
+/***********************************
+ * 功    能：数据保存
+ ***********************************/
+void ServoSaveDataReset();
+void ServoDataSave(SERVO *data);
+void ServoDataWrite();
 
 #endif
 
