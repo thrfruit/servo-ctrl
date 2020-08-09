@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import matplotlib.pyplot as plt
-import numpy as py
+import numpy as np
+from matplotlib.animation import FuncAnimation
+from matplotlib import animation
 import time as tm
 
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
@@ -89,6 +91,28 @@ axf.set_title('压力变化曲线')
 # --- Refpos
 axpos.plot(time, refpos)
 axpos.set_title('夹具位置信号')
+
+# === Gif
+gif, ax = plt.subplots()
+
+xdata, ydata = [], []
+ax.plot(time,refh, '--', label='参考位置')
+ax.plot(time,curh,label='实际位置')
+ax.legend()
+ln, = ax.plot(xdata,ydata,"ro")
+def init():
+    ax.set_xlim(0, time[-1]+0.3)
+    ax.set_ylim(-0.025,0.001)
+    return ln,
+
+def update(n):
+    xdata=time[n]
+    ydata=curh[n]
+    ln.set_data(xdata,ydata)
+    return ln,
+
+ani = FuncAnimation(gif, update, frames=np.arange(len(time)),
+        interval=time[-1]/len(time)*1000,init_func=init, blit=True)
 
 
 # ===================
