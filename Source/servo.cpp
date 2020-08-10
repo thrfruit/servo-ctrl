@@ -13,8 +13,8 @@
 PID pid;
 int cnt = 0;
 // 二阶临界阻尼系统参数
-float wn = 0.5;
-float goal = -20;
+float wn = 1;
+float h_goal = -20;
 double force_0;
 extern pthread_mutex_t mymutex;       // Shanw互斥锁
 extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
@@ -41,9 +41,9 @@ void servo_function(RmDriver *rm) {
   if (servo_svo.Flag.ServoFlag == ON) {
     // 根据参考模型计算物体期望运动状态
     exp_t = std::exp(-wn*curtime);
-    hm = goal*(1-exp_t*(1+wn*curtime))/1000;
-    dhm = goal*wn*wn*curtime*exp_t/1000;
-    d2hm = goal*wn*wn*(1-wn*curtime)*exp_t/1000;
+    hm = h_goal*(1-exp_t*(1+wn*curtime))/1000;
+    dhm = h_goal*wn*wn*curtime*exp_t/1000;
+    d2hm = h_goal*wn*wn*(1-wn*curtime)*exp_t/1000;
 
     // 读取压力值
     curfn = getForce();
@@ -78,7 +78,7 @@ void servo_function(RmDriver *rm) {
 
   /* *** 线程同步 *** */
   // 每过6个伺服周期唤醒一次图像处理周期
-  if (cnt == 6) {
+  if (cnt == 5) {
     cnt = 0;
     pthread_mutex_lock(&mymutex);
     pthread_cond_signal(&rt_msg_cond);

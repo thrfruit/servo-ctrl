@@ -39,6 +39,7 @@ typedef struct {
   double curh;
   double ufn;
   double time;
+  double cost_time;
 }RSCV;
 
 void *rscv (void *param);

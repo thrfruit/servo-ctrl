@@ -53,6 +53,10 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   /* 输出信号 */
   // 输出信号增量
   du = pid->kp*pid->err + fd*pid->kd*pid->diff_err;
+  // 设置开合速度
+  if (du>0) {
+    du = 2*du;
+  }
   // 限制输出范围
   if(pid->u+du > pid->u_max) {
     pid->u = pid->u_max;
@@ -62,14 +66,6 @@ double PID_Ctrl(PID* pid, double curval, double goal){
   }
   else{
     pid->u += du;
-  }
-
-  // 力控效果进入合适范围
-  if (pid->err < 5) {
-    pid->fit = 1;
-  }
-  else{
-    pid->fit = 0;
   }
 
   return pid->u;

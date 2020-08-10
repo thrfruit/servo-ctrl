@@ -20,7 +20,7 @@
 extern shm_interface shm_servo_inter;    // 线程结束标志; (main)
 extern pthread_mutex_t mymutex;       // Shanw互斥锁
 extern pthread_cond_t rt_msg_cond;    // Shawn条件变量
-extern double force_0;
+extern double force_0, h_goal;
 
 SVO rscv_svo;
 RSCV Rscv;
@@ -38,7 +38,7 @@ void *rscv (void *param) {
    */
   double hm, dhm, d2hm;
   double a_hat, b_hat, c_hat, ks=6;
-  double aa = 2, ab = 200, ac = 200;
+  double aa = 20, ab = 200, ac = 200;
   double hr, s, dh;
   double time=0, time_last=0, dt;
   double lambda = 10;
@@ -58,6 +58,7 @@ void *rscv (void *param) {
   // 启动设备的管道配置文件, 开始传送数据流
   rs2::pipeline_profile selection = pipe.start(cfg);
 
+  // 初始化储存数据
   RscvSaveDataReset();
 
   // 设置原点
@@ -70,6 +71,7 @@ void *rscv (void *param) {
     pthread_cond_wait(&rt_msg_cond, &mymutex);
     pthread_mutex_unlock(&mymutex);
 
+    start = GetCurrentTime();
     /* *** Get the current status *** */
     SvoRead(&rscv_svo);
     time = rscv_svo.Time.Curtime;
@@ -114,7 +116,13 @@ void *rscv (void *param) {
     a_hat += -aa*s*(hr+gravity)*dt;
     // 计算输出信号
     ufn    = force_0 + a_hat*(hr+gravity) - ks*s;
+    // 限制输出阈值
+    if (ufn<10) {
+      ufn = 10;
+      a_hat -= -aa*s*(hr+gravity)*dt;
+    }
 
+    end = GetCurrentTime();
     /* *** 同步共享数据 *** */
     rscv_svo.Time.Rscv_time = time;
     rscv_svo.State.Refforce = ufn;
@@ -126,6 +134,7 @@ void *rscv (void *param) {
     Rscv.dh    = dh;
     Rscv.a_hat = a_hat;
     Rscv.ufn   = ufn;
+    Rscv.cost_time = end - start;
     SvoWrite(&rscv_svo);
     RscvDataSave(&Rscv);
 

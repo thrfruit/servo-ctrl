@@ -55,7 +55,7 @@ del contents[0]
 for line in contents:
     value = [float(s) for s in line.split()]
     time_rscv.append(value[0])
-    a_hat.append(value[3])
+    a_hat.append(value[4])
 
 
 

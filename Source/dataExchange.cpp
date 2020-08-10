@@ -38,6 +38,7 @@ SVO Exp_data[EXP_DATA_LENGTH];
 SERVO Servo_data[EXP_DATA_LENGTH];
 RSCV Rscv_data[EXP_DATA_LENGTH];
 
+/* *** SVO Data *** */
 void ExpDataSave(SVO *data) {
   if(Exp_data_index < EXP_DATA_LENGTH) {
     Exp_data[Exp_data_index] = *data;
@@ -75,6 +76,7 @@ void ExpDataWrite() {
   }
 }
 
+/* *** Servo Data *** */
 void ServoSaveDataReset() {
   Servo_data_index = 0;
 }
@@ -115,6 +117,7 @@ void ServoDataWrite() {
   }
 }
 
+/* *** Rscv Data *** */
 void RscvSaveDataReset() {
   Rscv_data_index = 0;
 }
@@ -150,7 +153,7 @@ void RscvDataWrite() {
         << std::setw(len) << Rscv_data[i].hr
         << std::setw(len) << Rscv_data[i].a_hat
         << std::setw(len) << Rscv_data[i].ufn
-        << std::setw(len) << Rscv_data[i].curh
+        << std::setw(len) << Rscv_data[i].cost_time
         << std::endl;
     }
     file_rscv.close();

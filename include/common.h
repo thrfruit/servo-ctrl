@@ -34,9 +34,10 @@ struct shm_interface{
 
 // 标志位
 typedef struct{
-  int ServoFlag;      // 伺服启用标志
-  int RscvFlag;       // 图像处理线程标志
-  int ForceFlag;      // 力控标志
+  int ServoFlag;  // 伺服启用标志
+  int RscvFlag;   // 图像处理线程标志
+  int ForceFlag;  // 力控标志
+  int ReachFlag;  // 到达目标位置标志
 }FLAG;
 
 // 时间
