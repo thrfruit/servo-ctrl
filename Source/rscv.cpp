@@ -241,7 +241,7 @@ double getLine(rs2::frameset frames, rs2::pipeline pipe) {
   // Get frames
   rs2::frame color_frame = frames.get_color_frame();
 
-  // 创建Opencv中的Mat类,并传入数据
+  // 创建Opencv中的Mat类,并传入rs2::frame数据
   cv::Mat src(cv::Size(640, 480), CV_8UC3, (void*)color_frame.get_data(),
       cv::Mat::AUTO_STEP);
 
@@ -290,4 +290,75 @@ double getLine(rs2::frameset frames, rs2::pipeline pipe) {
   }
   else {return -1;}
 } // getLine
+
+Camera::Camera() {
+  // 配置管道的数据流信息
+  Camera::cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
+  // 启动设备的管道配置文件, 开始传送数据流
+  Camera::selection = Camera::pipe.start(Camera::cfg);
+}
+
+double Camera::GetPic(){
+  cv::Mat img;
+  // 储存直线信息
+  std::vector<cv::Vec4i> tline;
+  double delta_x, delta_y, k, h;
+  double h_min;
+  int h_flag;    // 是否找到工具上边缘的标志
+
+  // 等待下一帧
+  Camera::frames = Camera::pipe.wait_for_frames();
+  // Get frames
+  rs2::frame color_frame = frames.get_color_frame();
+  // 创建Opencv中的Mat类,并传入数据
+  cv::Mat src(cv::Size(640, 480), CV_8UC3, (void*)color_frame.get_data(),
+      cv::Mat::AUTO_STEP);
+  Camera::src = src.clone();
+  // Camera::src = src;
+
+  /* **************************************************
+   * 图像处理
+   * **************************************************/
+  // Processing
+  // Canny只接受单通道8位图像, 边缘检测前先将图像转换为灰度图
+  cv::cvtColor(src, img, cv::COLOR_BGR2GRAY);         // 灰度图
+  cv::GaussianBlur(img, img, cv::Size(5,5), 0, 0);    // 高斯滤波
+  // Canny参数影响轮廓轮廓识别
+  cv::Canny(img, img, 40, 80);
+
+  // 霍夫变换提取直线
+  HoughLinesP(img, tline,1,CV_PI/90,14,6,16);
+
+  // 获取直线信息
+  h_min = 99;    h_flag = 0;
+  // 未读取到直线信息
+  if(tline.size() == 0) {
+    return -1;
+  }
+  // 读取到直线信息
+  for (size_t i = 0; i < tline.size(); i++) {
+    // 计算斜率和高度
+    delta_x = tline[i][2] - tline[i][0];
+    delta_y = tline[i][3] - tline[i][1];
+    if(delta_x == 0) {continue;}
+    else{
+      k = (double)(delta_y / delta_x);
+      h = (double)((tline[i][1]+tline[i][3])/2*px2mm);
+    }
+
+    // 过滤得到水平直线
+    if (k > 0.1) {continue;}
+
+    // 更新工具上边缘位置
+    if (h - h_min < 0) {
+      h_min = h;
+      h_flag = 1;
+    }
+  } // for
+
+  if (h_flag) {
+    return h_min;
+  }
+  else {return -1;}
+}
 

@@ -49,5 +49,29 @@ void RscvSaveDataReset();
 void RscvDataSave(RSCV *data);
 void RscvDataWrite();
 
+class Camera {
+  private:
+    // 声明Realsense管道
+    rs2::pipeline pipe;
+    // 创建一个rs2::frameset对象, 包含一组帧和访问他们的接口
+    rs2::frameset frames;
+    // 声明彩色图
+    rs2::colorizer color_map;
+    // 管道的数据流信息
+    rs2::config cfg;
+    // 设备的管道配置文件
+    rs2::pipeline_profile selection;
+
+  public:
+    // 相机采集的原始图片
+    cv::Mat src;
+
+    // 构造函数
+    Camera();
+    // 获取图像
+    double GetPic();
+};
+
+
 #endif
 
