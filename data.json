@@ -1,0 +1,210 @@
+[
+  {
+    "year": "2017",
+    "value": 13,
+    "category": "Tracking"
+  },
+  {
+    "year": "2018",
+    "value": 9,
+    "category": "Tracking"
+  },
+  {
+    "year": "2019",
+    "value": 18,
+    "category": "Tracking"
+  },
+  {
+    "year": "2020",
+    "value": 9,
+    "category": "Tracking"
+  },
+  {
+    "year": "2021",
+    "value": 14,
+    "category": "Tracking"
+  },
+
+  {
+    "year": "2017",
+    "value": 17,
+    "category": "Interaction"
+  },
+  {
+    "year": "2018",
+    "value": 23,
+    "category": "Interaction"
+  },
+  {
+    "year": "2019",
+    "value": 67,
+    "category": "Interaction"
+  },
+  {
+    "year": "2020",
+    "value": 14,
+    "category": "Interaction"
+  },
+  {
+    "year": "2021",
+    "value": 20,
+    "category": "Interaction"
+  },
+
+  {
+    "year": "2017",
+    "value": 4,
+    "category": "User Interface"
+  },
+  {
+    "year": "2018",
+    "value": 16,
+    "category": "User Interface"
+  },
+  {
+    "year": "2019",
+    "value": 31,
+    "category": "User Interface"
+  },
+  {
+    "year": "2020",
+    "value": 8,
+    "category": "User Interface"
+  },
+  {
+    "year": "2021",
+    "value": 8,
+    "category": "User Interface"
+  },
+
+
+  {
+    "year": "2017",
+    "value": 0,
+    "category": "Middleware"
+  },
+  {
+    "year": "2018",
+    "value": 1,
+    "category": "Middleware"
+  },
+  {
+    "year": "2019",
+    "value": 2,
+    "category": "Middleware"
+  },
+  {
+    "year": "2020",
+    "value": 0,
+    "category": "Middleware"
+  },
+  {
+    "year": "2021",
+    "value": 0,
+    "category": "Middleware"
+  },
+
+  {
+    "year": "2017",
+    "value": 1,
+    "category": "Device Hardware"
+  },
+  {
+    "year": "2018",
+    "value": 3,
+    "category": "Device Hardware"
+  },
+  {
+    "year": "2019",
+    "value": 2,
+    "category": "Device Hardware"
+  },
+  {
+    "year": "2020",
+    "value": 9,
+    "category": "Device Hardware"
+  },
+  {
+    "year": "2021",
+    "value": 1,
+    "category": "Device Hardware"
+  },
+
+  {
+    "year": "2017",
+    "value": 5,
+    "category": "Rendering"
+  },
+  {
+    "year": "2018",
+    "value": 5,
+    "category": "Rendering"
+  },
+  {
+    "year": "2019",
+    "value": 13,
+    "category": "Rendering"
+  },
+  {
+    "year": "2020",
+    "value": 10,
+    "category": "Rendering"
+  },
+  {
+    "year": "2021",
+    "value": 10,
+    "category": "Rendering"
+  },
+  
+  {
+    "year": "2017",
+    "value": 0,
+    "category": "Privacy"
+  },
+  {
+    "year": "2018",
+    "value": 1,
+    "category": "Privacy"
+  },
+  {
+    "year": "2019",
+    "value": 2,
+    "category": "Privacy"
+  },
+  {
+    "year": "2020",
+    "value": 0,
+    "category": "Privacy"
+  },
+  {
+    "year": "2021",
+    "value": 2,
+    "category": "Privacy"
+  },
+  
+  {
+    "year": "2017",
+    "value": 12,
+    "category": "Applications"
+  },
+  {
+    "year": "2018",
+    "value": 17,
+    "category": "Applications"
+  },
+  {
+    "year": "2019",
+    "value": 50,
+    "category": "Applications"
+  },
+  {
+    "year": "2020",
+    "value": 30,
+    "category": "Applications"
+  },
+  {
+    "year": "2021",
+    "value": 2,
+    "category": "Applications"
+  },
+]
